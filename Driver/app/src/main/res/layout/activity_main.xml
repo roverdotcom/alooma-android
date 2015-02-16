@@ -33,4 +33,11 @@
         android:layout_height="wrap_content"
         android:text="@string/button_alooma"
         android:onClick="setAlooma" />
+    <Button
+        android:id="@+id/button_perform"
+        android:layout_gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/button_perform"
+        android:onClick="sendBurst" />
 </LinearLayout>

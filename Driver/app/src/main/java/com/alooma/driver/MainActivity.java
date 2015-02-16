@@ -4,6 +4,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.os.SystemClock;
 
 import android.view.View;
 import android.widget.EditText;
@@ -37,9 +38,31 @@ public class MainActivity extends ActionBarActivity {
 
         //mMixpanel.getPeople().identify("19810");
         //mMixpanel.getPeople().set("Plan", "Premium");
+
         //mMixpanel.getPeople().increment("points", 500);
         //mMixpanel.getPeople().trackCharge(100, null);
+
         mMixpanel.track("Aloomix", properties);
+    }
+
+    public void sendBurst(View view) {
+        EditText editText = (EditText) findViewById(R.id.edit_message);
+        String val = editText.getText().toString();
+        if (val.isEmpty()) {
+            val = "default_value";
+        }
+
+        JSONObject properties = new JSONObject();
+        try {
+            properties.put("cell-kpi", val);
+        } catch (JSONException e) {
+
+        }
+
+        for (int i = 0; i < 100; i++) {
+            mMixpanel.track("Aloomix", properties);
+            SystemClock.sleep(10);
+        }
     }
 
     public void setAlooma(View view) {
