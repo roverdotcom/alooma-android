@@ -104,9 +104,9 @@ uploadArchives {
             description 'An Alooma Analytics Android library based on  Mixpanel SDK'
             url 'https://github.com/Aloomaio/alooma-mixpanel-android'
             scm {
-                url 'http://github.com/Aloomaio/alooma-mixpanel-android'
-                connection 'scm:git:http://github.com/Aloomaio/alooma-mixpanel-android'
-                developerConnection 'scm:git:git@github.com:Aloomaio/alooma-mixpanel-android.git'
+                url 'scm:git:git@github.com:aloomaio/alooma-mixpanel-android'
+                connection 'scm:git:git@github.com:aloomaio/alooma-mixpanel-android'
+                developerConnection 'scm:git:git@github.com:aloomaio/alooma-mixpanel-android.git'
             }
             licenses {
                 license {
@@ -132,6 +132,8 @@ uploadArchives {
         pom.whenConfigured { pom ->
             pom.dependencies*.optional = true
         }
+
+        println "sonatypeUsername: " + project.hasProperty("sonatypeUsername")
 
         if (isReleaseVersion() && project.hasProperty("sonatypeUsername")) {
             /**
