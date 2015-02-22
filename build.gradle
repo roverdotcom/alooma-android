@@ -117,14 +117,9 @@ uploadArchives {
             }
             developers {
                 developer {
-                    id 'jbwyme'
-                    name 'Josh Wymer'
-                    email 'josh@mixpanel.com'
-                }
-                developer {
-                    id 'joeatwork'
-                    name 'Joe Bowers'
-                    email 'joe@mixpanel.com'
+                    id 'alex.shacked'
+                    name 'Alex Shacked'
+                    email 'alex@alooma.io'
                 }
             }
         }
@@ -161,4 +156,3 @@ uploadArchives {
 
     }
 }
-
