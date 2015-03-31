@@ -376,9 +376,37 @@ import java.util.Map;
                     return;
                 }
 
-
+<<<<<<< HEAD:src/main/java/com/alooma/android/aloomametrics/AnalyticsMessages.java
                 logAboutMessageToAlooma("Sending records to alooma");
                 sendData(dbAdapter, ADbAdapter.Table.EVENTS, new String[]{ "http://" + mAloomaHost + "/track?ip=1"});
+=======
+                logAboutMessageToMixpanel("Sending records to Mixpanel");
+
+                if (aloomaHost != null) {
+                    String target = "http://" + aloomaHost + "/track?ip=1";
+                    sendData(dbAdapter, MPDbAdapter.Table.EVENTS, new String[]{ target });
+                    sendData(dbAdapter, MPDbAdapter.Table.PEOPLE, new String[]{ target });
+                    if (sendAloomaAndMixpanel) {
+                        sendToMixpanel(dbAdapter);
+                    }
+                }
+                else {
+                    sendToMixpanel(dbAdapter);
+                }
+            }
+
+            private void sendToMixpanel(MPDbAdapter dbAdapter) {
+                if (mDisableFallback) {
+                    sendData(dbAdapter, MPDbAdapter.Table.EVENTS, new String[]{ mConfig.getEventsEndpoint() });
+                    sendData(dbAdapter, MPDbAdapter.Table.PEOPLE, new String[]{ mConfig.getPeopleEndpoint() });
+                } else {
+                    sendData(dbAdapter, MPDbAdapter.Table.EVENTS,
+                            new String[]{ mConfig.getEventsEndpoint(), mConfig.getEventsFallbackEndpoint() });
+                    sendData(dbAdapter, MPDbAdapter.Table.PEOPLE,
+                            new String[]{ mConfig.getPeopleEndpoint(), mConfig.getPeopleFallbackEndpoint() });
+                }
+
+>>>>>>> master:src/main/java/com/mixpanel/android/mpmetrics/AnalyticsMessages.java
             }
 
             private void sendData(ADbAdapter dbAdapter, ADbAdapter.Table table, String[] urls) {
@@ -580,9 +608,13 @@ import java.util.Map;
     // Used across thread boundaries
     private final Worker mWorker;
     private final Context mContext;
+<<<<<<< HEAD:src/main/java/com/alooma/android/aloomametrics/AnalyticsMessages.java
     private final AConfig mConfig;
+=======
+    private final MPConfig mConfig;
     private boolean sendAloomaAndMixpanel = false;
     private String aloomaHost = null;
+>>>>>>> master:src/main/java/com/mixpanel/android/mpmetrics/AnalyticsMessages.java
 
     // Messages for our thread
     private static int ENQUEUE_PEOPLE = 0; // submit events and people data

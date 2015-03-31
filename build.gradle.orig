@@ -101,12 +101,22 @@ uploadArchives {
         pom.project {
             name project.name
             packaging 'aar'
+<<<<<<< HEAD
+            description 'An Android library for Mixpanel Analytics \n' +
+                    'http://alooma.com/android-analytics/'
+            url 'https://github.com/alooma/alooma-android'
+            scm {
+                url 'http://github.com/alooma/alooma-android'
+                connection 'scm:git:http://github.com/alooma/alooma-android'
+                developerConnection 'scm:git:git@github.com:alooma/alooma-android.git'
+=======
             description 'An Alooma Analytics Android library based on  Mixpanel SDK'
             url 'https://github.com/Aloomaio/alooma-mixpanel-android'
             scm {
                 url 'scm:git:git@github.com:aloomaio/alooma-mixpanel-android'
                 connection 'scm:git:git@github.com:aloomaio/alooma-mixpanel-android'
                 developerConnection 'scm:git:git@github.com:aloomaio/alooma-mixpanel-android.git'
+>>>>>>> master
             }
             licenses {
                 license {
@@ -117,9 +127,15 @@ uploadArchives {
             }
             developers {
                 developer {
+<<<<<<< HEAD
                     id 'asdasd'
                     name 'Asd asd'
                     email 'info@alooma.com'
+=======
+                    id 'alex.shacked'
+                    name 'Alex Shacked'
+                    email 'alex@alooma.io'
+>>>>>>> master
                 }
             }
         }

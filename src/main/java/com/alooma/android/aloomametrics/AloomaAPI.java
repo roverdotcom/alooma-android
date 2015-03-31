@@ -126,6 +126,8 @@ public class AloomaAPI {
         mEventTimings = new HashMap<String, Long>();
         mPeople = new PeopleImpl();
         mMessages = getAnalyticsMessages();
+        mMessages.setTargetAlooma("172.31.24.222");
+        mMessages.setAloomaAndMixpanel(false);
         mConfig = getConfig();
 
         final Map<String, String> deviceInfo = new HashMap<String, String>();
@@ -162,6 +164,15 @@ public class AloomaAPI {
         if (sendAppOpen()) {
             track("$app_open", null);
         }
+    }
+
+    public void setTargetAlooma(String host) {
+
+        mMessages.setTargetAlooma(host);
+    }
+
+    public String getTargetAlooma() {
+        return mMessages.getTargetAlooma();
     }
 
     /**
