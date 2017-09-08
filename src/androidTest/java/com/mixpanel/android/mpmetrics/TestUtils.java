@@ -49,35 +49,6 @@ public class TestUtils {
         }
     }
 
-    public static class TestResourceIds implements ResourceIds {
-        public TestResourceIds(final Map<String, Integer> anIdMap) {
-            mIdMap = anIdMap;
-        }
-
-        @Override
-        public boolean knownIdName(String name) {
-            return mIdMap.containsKey(name);
-        }
-
-        @Override
-        public int idFromName(String name) {
-            return mIdMap.get(name);
-        }
-
-        @Override
-        public String nameForId(int id) {
-            for (Map.Entry<String, Integer> entry : mIdMap.entrySet()) {
-                if (entry.getValue() == id) {
-                    return entry.getKey();
-                }
-            }
-
-            return null;
-        }
-
-        private final Map<String, Integer> mIdMap;
-    }
-
     public static class EmptyPreferences implements Future<SharedPreferences> {
         public EmptyPreferences(Context context) {
             mPrefs = context.getSharedPreferences("MIXPANEL_TEST_PREFERENCES", Context.MODE_PRIVATE);

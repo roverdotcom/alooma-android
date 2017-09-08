@@ -29,8 +29,7 @@ import com.mixpanel.android.util.MPLog;
     private static final Map<Context, MPDbAdapter> sInstances = new HashMap<>();
 
     public enum Table {
-        EVENTS ("events"),
-        PEOPLE ("people");
+        EVENTS ("events");
 
         Table(String name) {
             mTableName = name;
@@ -61,17 +60,8 @@ import com.mixpanel.android.util.MPLog;
         KEY_CREATED_AT + " INTEGER NOT NULL, " +
         KEY_AUTOMATIC_DATA + " INTEGER DEFAULT 0, " +
         KEY_TOKEN + " STRING NOT NULL DEFAULT '')";
-    private static final String CREATE_PEOPLE_TABLE =
-       "CREATE TABLE " + Table.PEOPLE.getName() + " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-        KEY_DATA + " STRING NOT NULL, " +
-        KEY_CREATED_AT + " INTEGER NOT NULL, " +
-        KEY_AUTOMATIC_DATA + " INTEGER DEFAULT 0, " +
-        KEY_TOKEN + " STRING NOT NULL DEFAULT '')";
     private static final String EVENTS_TIME_INDEX =
         "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
-        " (" + KEY_CREATED_AT + ");";
-    private static final String PEOPLE_TIME_INDEX =
-        "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.PEOPLE.getName() +
         " (" + KEY_CREATED_AT + ");";
 
     private final MPDatabaseHelper mDb;
@@ -96,9 +86,7 @@ import com.mixpanel.android.util.MPLog;
             MPLog.v(LOGTAG, "Creating a new Mixpanel events DB");
 
             db.execSQL(CREATE_EVENTS_TABLE);
-            db.execSQL(CREATE_PEOPLE_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
-            db.execSQL(PEOPLE_TIME_INDEX);
         }
 
         @Override
@@ -109,11 +97,8 @@ import com.mixpanel.android.util.MPLog;
                 migrateTableFrom4To5(db);
             } else {
                 db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-                db.execSQL("DROP TABLE IF EXISTS " + Table.PEOPLE.getName());
                 db.execSQL(CREATE_EVENTS_TABLE);
-                db.execSQL(CREATE_PEOPLE_TABLE);
                 db.execSQL(EVENTS_TIME_INDEX);
-                db.execSQL(PEOPLE_TIME_INDEX);
             }
         }
 
@@ -126,9 +111,7 @@ import com.mixpanel.android.util.MPLog;
 
         private void migrateTableFrom4To5(SQLiteDatabase db) {
             db.execSQL("ALTER TABLE " + Table.EVENTS.getName() + " ADD COLUMN " + KEY_AUTOMATIC_DATA + " INTEGER DEFAULT 0");
-            db.execSQL("ALTER TABLE " + Table.PEOPLE.getName() + " ADD COLUMN " + KEY_AUTOMATIC_DATA + " INTEGER DEFAULT 0");
             db.execSQL("ALTER TABLE " + Table.EVENTS.getName() + " ADD COLUMN " + KEY_TOKEN + " STRING NOT NULL DEFAULT ''");
-            db.execSQL("ALTER TABLE " + Table.PEOPLE.getName() + " ADD COLUMN " + KEY_TOKEN + " STRING NOT NULL DEFAULT ''");
 
             Cursor eventsCursor = db.rawQuery("SELECT * FROM " + Table.EVENTS.getName(), null);
             while (eventsCursor.moveToNext()) {
@@ -140,19 +123,6 @@ import com.mixpanel.android.util.MPLog;
                     db.execSQL("UPDATE " + Table.EVENTS.getName() + " SET " + KEY_TOKEN + " = '" + token + "' WHERE _id = " + rowId);
                 } catch (final JSONException e) {
                     db.delete(Table.EVENTS.getName(), "_id = " + rowId, null);
-                }
-            }
-
-            Cursor peopleCursor = db.rawQuery("SELECT * FROM " + Table.PEOPLE.getName(), null);
-            while (peopleCursor.moveToNext()) {
-                int rowId = 0;
-                try {
-                    final JSONObject j = new JSONObject(peopleCursor.getString(peopleCursor.getColumnIndex(KEY_DATA)));
-                    String token = j.getString("$token");
-                    rowId = peopleCursor.getInt(peopleCursor.getColumnIndex("_id"));
-                    db.execSQL("UPDATE " + Table.PEOPLE.getName() + " SET " + KEY_TOKEN + " = '" + token + "' WHERE _id = " + rowId);
-                } catch (final JSONException e) {
-                    db.delete(Table.PEOPLE.getName(), "_id = " + rowId, null);
                 }
             }
         }
@@ -188,7 +158,7 @@ import com.mixpanel.android.util.MPLog;
      * to the SQLiteDatabase.
      * @param j the JSON to record
      * @param token token of the project
-     * @param table the table to insert into, either "events" or "people"
+     * @param table the table to insert into "events""
      * @param isAutomaticRecord mark the record as an automatic event or not
      * @return the number of rows in the table, or DB_OUT_OF_MEMORY_ERROR/DB_UPDATE_ERROR
      * on failure
@@ -242,7 +212,7 @@ import com.mixpanel.android.util.MPLog;
     /**
      * Removes events with an _id <= last_id from table
      * @param last_id the last id to delete
-     * @param table the table to remove events from, either "events" or "people"
+     * @param table the table to remove events from "events"
      * @param includeAutomaticEvents whether or not automatic events should be included in the cleanup
      */
     public void cleanupEvents(String last_id, Table table, String token, boolean includeAutomaticEvents) {
@@ -272,7 +242,7 @@ import com.mixpanel.android.util.MPLog;
     /**
      * Removes events before time.
      * @param time the unix epoch in milliseconds to remove events before
-     * @param table the table to remove events from, either "events" or "people"
+     * @param table the table to remove events from "events"
      */
     public void cleanupEvents(long time, Table table) {
         final String tableName = table.getName();
@@ -299,7 +269,6 @@ import com.mixpanel.android.util.MPLog;
      */
     public synchronized void cleanupAutomaticEvents(String token) {
         cleanupAutomaticEvents(Table.EVENTS, token);
-        cleanupAutomaticEvents(Table.PEOPLE, token);
     }
 
     private void cleanupAutomaticEvents(Table table, String token) {
@@ -330,7 +299,7 @@ import com.mixpanel.android.util.MPLog;
      * Returns the data string to send to Mixpanel and the maximum ID of the row that
      * we're sending, so we know what rows to delete when a track request was successful.
      *
-     * @param table the table to read the JSON from, either "events" or "people"
+     * @param table the table to read the JSON from "events"
      * @param token the token of the project you want to retrieve the records for
      * @param includeAutomaticEvents whether or not it should include pre-track records
      * @return String array containing the maximum ID, the data string

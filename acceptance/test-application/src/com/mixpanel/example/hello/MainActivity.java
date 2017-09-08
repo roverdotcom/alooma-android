@@ -16,7 +16,6 @@ import android.view.View;
 import android.widget.EditText;
 
 import com.mixpanel.android.mpmetrics.MixpanelAPI;
-import com.mixpanel.android.mpmetrics.OnMixpanelUpdatesReceivedListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;

@@ -91,7 +91,7 @@ import javax.net.ssl.SSLSocketFactory;
  */
 public class MPConfig {
 
-    public static final String VERSION = BuildConfig.MIXPANEL_VERSION;
+    public static final String VERSION = BuildConfig.MIXPANEL_VERSION; //MJA
 
     public static boolean DEBUG = false;
 
@@ -423,7 +423,6 @@ public class MPConfig {
         return mOfflineMode;
     }
 
-    // ImageStore LRU Cache size will be availableMaxMemory() / mImageCacheMaxMemoryFactor
     public int getImageCacheMaxMemoryFactor() {
         return mImageCacheMaxMemoryFactor;
     }

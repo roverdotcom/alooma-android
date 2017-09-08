@@ -9,12 +9,10 @@ import android.os.Bundle;
 import android.test.AndroidTestCase;
 import android.test.mock.MockContext;
 import android.test.mock.MockPackageManager;
-import android.util.Log;
 
 import com.mixpanel.android.util.Base64Coder;
 import com.mixpanel.android.util.HttpService;
 import com.mixpanel.android.util.RemoteService;
-import com.mixpanel.android.viewcrawler.UpdatesFromMixpanel;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -85,27 +83,18 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
         MPDbAdapter adapter = new MPDbAdapter(getContext(), "DeleteTestDB");
         adapter.addJSON(before, "ATOKEN", MPDbAdapter.Table.EVENTS, false);
-        adapter.addJSON(before, "ATOKEN", MPDbAdapter.Table.PEOPLE, false);
         adapter.deleteDB();
 
         String[] emptyEventsData = adapter.generateDataString(MPDbAdapter.Table.EVENTS, "ATOKEN", true);
         assertEquals(emptyEventsData, null);
-        String[] emptyPeopleData = adapter.generateDataString(MPDbAdapter.Table.PEOPLE, "ATOKEN", true);
-        assertEquals(emptyPeopleData, null);
 
         adapter.addJSON(after, "ATOKEN", MPDbAdapter.Table.EVENTS, false);
-        adapter.addJSON(after, "ATOKEN", MPDbAdapter.Table.PEOPLE, false);
 
         try {
             String[] someEventsData = adapter.generateDataString(MPDbAdapter.Table.EVENTS, "ATOKEN", true);
             JSONArray someEvents = new JSONArray(someEventsData[1]);
             assertEquals(someEvents.length(), 1);
             assertEquals(someEvents.getJSONObject(0).get("added"), "after");
-
-            String[] somePeopleData = adapter.generateDataString(MPDbAdapter.Table.PEOPLE, "ATOKEN", true);
-            JSONArray somePeople = new JSONArray(somePeopleData[1]);
-            assertEquals(somePeople.length(), 1);
-            assertEquals(somePeople.getJSONObject(0).get("added"), "after");
         } catch (JSONException e) {
             fail("Unexpected JSON or lack thereof in MPDbAdapter test");
         }
@@ -266,153 +255,6 @@ public class MixpanelBasicTest extends AndroidTestCase {
         }
     }
 
-    public void testPeopleOperations() throws JSONException {
-        final List<AnalyticsMessages.PeopleDescription> messages = new ArrayList<AnalyticsMessages.PeopleDescription>();
-
-        final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
-            @Override
-            public void peopleMessage(PeopleDescription heard) {
-                messages.add(heard);
-            }
-        };
-
-        MixpanelAPI mixpanel = new TestUtils.CleanMixpanelAPI(getContext(), mMockPreferences, "TEST TOKEN testIdentifyAfterSet") {
-            @Override
-            protected AnalyticsMessages getAnalyticsMessages() {
-                return listener;
-            }
-        };
-
-        Map<String, Object> mapObj1 = new HashMap<>();
-        mapObj1.put("SET MAP INT", 1);
-        Map<String, Object> mapObj2 = new HashMap<>();
-        mapObj2.put("SET ONCE MAP STR", "SET ONCE MAP VALUE");
-
-        mixpanel.getPeople().identify("TEST IDENTITY");
-
-        mixpanel.getPeople().set("SET NAME", "SET VALUE");
-        mixpanel.getPeople().setMap(mapObj1);
-        mixpanel.getPeople().increment("INCREMENT NAME", 1);
-        mixpanel.getPeople().append("APPEND NAME", "APPEND VALUE");
-        mixpanel.getPeople().setOnce("SET ONCE NAME", "SET ONCE VALUE");
-        mixpanel.getPeople().setOnceMap(mapObj2);
-        mixpanel.getPeople().union("UNION NAME", new JSONArray("[100]"));
-        mixpanel.getPeople().unset("UNSET NAME");
-        mixpanel.getPeople().trackCharge(100, new JSONObject("{\"name\": \"val\"}"));
-        mixpanel.getPeople().clearCharges();
-        mixpanel.getPeople().deleteUser();
-
-        JSONObject setMessage = messages.get(0).getMessage().getJSONObject("$set");
-        assertEquals("SET VALUE", setMessage.getString("SET NAME"));
-
-        JSONObject setMapMessage = messages.get(1).getMessage().getJSONObject("$set");
-        assertEquals(mapObj1.get("SET MAP INT"), setMapMessage.getInt("SET MAP INT"));
-
-        JSONObject addMessage = messages.get(2).getMessage().getJSONObject("$add");
-        assertEquals(1, addMessage.getInt("INCREMENT NAME"));
-
-        JSONObject appendMessage = messages.get(3).getMessage().getJSONObject("$append");
-        assertEquals("APPEND VALUE", appendMessage.get("APPEND NAME"));
-
-        JSONObject setOnceMessage = messages.get(4).getMessage().getJSONObject("$set_once");
-        assertEquals("SET ONCE VALUE", setOnceMessage.getString("SET ONCE NAME"));
-
-        JSONObject setOnceMapMessage = messages.get(5).getMessage().getJSONObject("$set_once");
-        assertEquals(mapObj2.get("SET ONCE MAP STR"), setOnceMapMessage.getString("SET ONCE MAP STR"));
-
-        JSONObject unionMessage = messages.get(6).getMessage().getJSONObject("$union");
-        JSONArray unionValues = unionMessage.getJSONArray("UNION NAME");
-        assertEquals(1, unionValues.length());
-        assertEquals(100, unionValues.getInt(0));
-
-        JSONArray unsetMessage = messages.get(7).getMessage().getJSONArray("$unset");
-        assertEquals(1, unsetMessage.length());
-        assertEquals("UNSET NAME", unsetMessage.get(0));
-
-        JSONObject trackChargeMessage = messages.get(8).getMessage().getJSONObject("$append");
-        JSONObject transaction = trackChargeMessage.getJSONObject("$transactions");
-        assertEquals(100.0d, transaction.getDouble("$amount"));
-
-        JSONArray clearChargesMessage = messages.get(9).getMessage().getJSONArray("$unset");
-        assertEquals(1, clearChargesMessage.length());
-        assertEquals("$transactions", clearChargesMessage.getString(0));
-
-        assertTrue(messages.get(10).getMessage().has("$delete"));
-    }
-
-    public void testIdentifyAfterSet() {
-        final List<AnalyticsMessages.PeopleDescription> messages = new ArrayList<AnalyticsMessages.PeopleDescription>();
-
-        final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
-            @Override
-            public void peopleMessage(PeopleDescription heard) {
-                messages.add(heard);
-            }
-        };
-
-        MixpanelAPI mixpanel = new TestUtils.CleanMixpanelAPI(getContext(), mMockPreferences, "TEST TOKEN testIdentifyAfterSet") {
-            @Override
-            protected AnalyticsMessages getAnalyticsMessages() {
-                return listener;
-            }
-
-            @Override
-            DecideMessages constructDecideUpdates(String token, DecideMessages.OnNewResultsListener listener, UpdatesFromMixpanel updatesFromMixpanel) {
-                return super.constructDecideUpdates(token, listener, updatesFromMixpanel);
-            }
-        };
-
-        MixpanelAPI.People people = mixpanel.getPeople();
-        people.increment("the prop", 0L);
-        people.append("the prop", 1);
-        people.set("the prop", 2);
-        people.increment("the prop", 3L);
-        people.increment("the prop", 4);
-        people.append("the prop", 5);
-        people.append("the prop", 6);
-        people.identify("Personal Identity");
-
-        assertEquals(messages.size(), 7);
-        try {
-            for (AnalyticsMessages.PeopleDescription message: messages) {
-                String distinctId = message.getMessage().getString("$distinct_id");
-                assertEquals(distinctId, "Personal Identity");
-            }
-
-            assertTrue(messages.get(0).getMessage().has("$add"));
-            assertTrue(messages.get(1).getMessage().has("$append"));
-            assertTrue(messages.get(2).getMessage().has("$set"));
-            assertTrue(messages.get(3).getMessage().has("$add"));
-            assertTrue(messages.get(4).getMessage().has("$add"));
-        } catch (JSONException e) {
-            fail("Unexpected JSON error in stored messages.");
-        }
-    }
-
-    public void testIdentifyAndGetDistinctId() {
-        MixpanelAPI metrics = new TestUtils.CleanMixpanelAPI(getContext(), mMockPreferences, "Identify Test Token");
-
-        String generatedId = metrics.getDistinctId();
-        assertNotNull(generatedId);
-
-        String emptyId = metrics.getPeople().getDistinctId();
-        assertNull(emptyId);
-
-        metrics.identify("Events Id");
-        String setId = metrics.getDistinctId();
-        assertEquals("Events Id", setId);
-
-        String stillEmpty = metrics.getPeople().getDistinctId();
-        assertNull(stillEmpty);
-
-        metrics.getPeople().identify("People Id");
-        String unchangedId = metrics.getDistinctId();
-        assertEquals("Events Id", unchangedId);
-
-        String setPeopleId = metrics.getPeople().getDistinctId();
-        assertEquals("People Id", setPeopleId);
-    }
-
     public void testMessageQueuing() {
         final BlockingQueue<String> messages = new LinkedBlockingQueue<String>();
         final SynchronizedReference<Boolean> isIdentifiedRef = new SynchronizedReference<Boolean>();
@@ -434,7 +276,6 @@ public class MixpanelBasicTest extends AndroidTestCase {
             }
         };
         mockAdapter.cleanupEvents(Long.MAX_VALUE, MPDbAdapter.Table.EVENTS);
-        mockAdapter.cleanupEvents(Long.MAX_VALUE, MPDbAdapter.Table.PEOPLE);
 
         final RemoteService mockPoster = new HttpService() {
             @Override
@@ -573,12 +414,9 @@ public class MixpanelBasicTest extends AndroidTestCase {
             assertEquals("next wave", nextWaveEvent.getString("event"));
 
             isIdentifiedRef.set(true);
-            metrics.getPeople().identify("PEOPLE ID");
-            metrics.getPeople().set("prop", "yup");
             metrics.flush();
 
             String peopleTable = messages.poll(POLL_WAIT_SECONDS, TimeUnit.SECONDS);
-            assertEquals("TABLE " + MPDbAdapter.Table.PEOPLE.getName(), peopleTable);
 
             expectedJSONMessage = messages.poll(POLL_WAIT_SECONDS, TimeUnit.SECONDS);
             JSONObject peopleMessage = new JSONObject(expectedJSONMessage);
@@ -600,59 +438,6 @@ public class MixpanelBasicTest extends AndroidTestCase {
         }
     }
 
-    public void testTrackCharge() {
-        final List<AnalyticsMessages.PeopleDescription> messages = new ArrayList<>();
-        final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
-            @Override
-            public void eventsMessage(EventDescription heard) {
-                if (!heard.isAutomatic()) {
-                    throw new RuntimeException("Should not be called during this test");
-                }
-            }
-
-            @Override
-            public void peopleMessage(PeopleDescription heard) {
-                messages.add(heard);
-            }
-        };
-
-        class ListeningAPI extends TestUtils.CleanMixpanelAPI {
-            public ListeningAPI(Context c, Future<SharedPreferences> referrerPrefs, String token) {
-                super(c, referrerPrefs, token);
-            }
-
-            @Override
-            protected AnalyticsMessages getAnalyticsMessages() {
-                 return listener;
-            }
-        }
-
-        MixpanelAPI api = new ListeningAPI(getContext(), mMockPreferences, "TRACKCHARGE TEST TOKEN");
-        api.getPeople().identify("TRACKCHARGE PERSON");
-
-        JSONObject props;
-        try {
-            props = new JSONObject("{'$time':'Should override', 'Orange':'Banana'}");
-        } catch (JSONException e) {
-            throw new RuntimeException("Can't construct fixture for trackCharge test");
-        }
-
-        api.getPeople().trackCharge(2.13, props);
-        assertEquals(messages.size(), 1);
-
-        JSONObject message = messages.get(0).getMessage();
-
-        try {
-            JSONObject append = message.getJSONObject("$append");
-            JSONObject newTransaction = append.getJSONObject("$transactions");
-            assertEquals(newTransaction.optString("Orange"), "Banana");
-            assertEquals(newTransaction.optString("$time"), "Should override");
-            assertEquals(newTransaction.optDouble("$amount"), 2.13);
-        } catch (JSONException e) {
-            fail("Transaction message had unexpected layout:\n" + message.toString());
-        }
-    }
-
     public void testPersistence() {
         MixpanelAPI metricsOne = new MixpanelAPI(getContext(), mMockPreferences, "SAME TOKEN");
         metricsOne.reset();
@@ -667,7 +452,6 @@ public class MixpanelBasicTest extends AndroidTestCase {
         metricsOne.clearSuperProperties();
         metricsOne.registerSuperProperties(props);
         metricsOne.identify("Expected Events Identity");
-        metricsOne.getPeople().identify("Expected People Identity");
 
         // We exploit the fact that any metrics object with the same token
         // will get their values from the same persistent store.
@@ -679,11 +463,6 @@ public class MixpanelBasicTest extends AndroidTestCase {
                 if (!heard.isAutomatic()) {
                     messages.add(heard);
                 }
-            }
-
-            @Override
-            public void peopleMessage(PeopleDescription heard) {
-                messages.add(heard);
             }
         };
 
@@ -715,7 +494,6 @@ public class MixpanelBasicTest extends AndroidTestCase {
         MixpanelAPI differentToken = new ListeningAPI(getContext(), mMockPreferences, "DIFFERENT TOKEN");
 
         differentToken.track("other event", null);
-        differentToken.getPeople().set("other people prop", "Word"); // should be queued up.
 
         assertEquals(1, messages.size());
 
@@ -739,12 +517,10 @@ public class MixpanelBasicTest extends AndroidTestCase {
         MixpanelAPI metricsTwo = new ListeningAPI(getContext(), mMockPreferences, "SAME TOKEN");
 
         metricsTwo.track("eventname", null);
-        metricsTwo.getPeople().set("people prop name", "Indeed");
 
         assertEquals(2, messages.size());
 
         eventMessage = (AnalyticsMessages.EventDescription) messages.get(0);
-        JSONObject peopleMessage =  ((AnalyticsMessages.PeopleDescription)messages.get(1)).getMessage();
 
         try {
             JSONObject eventProps = eventMessage.getProperties();
@@ -757,13 +533,6 @@ public class MixpanelBasicTest extends AndroidTestCase {
             assertEquals("value of b", sentB);
         } catch (JSONException e) {
             fail("Event message has an unexpected shape " + e);
-        }
-
-        try {
-            String sentId = peopleMessage.getString("$distinct_id");
-            assertEquals("Expected People Identity", sentId);
-        } catch (JSONException e) {
-            fail("Event message has an unexpected shape: " + peopleMessage.toString());
         }
     }
 
@@ -873,20 +642,6 @@ public class MixpanelBasicTest extends AndroidTestCase {
         assertEquals("PEOPLE FALLBACK ENDPOINT", testConfig.getPeopleFallbackEndpoint());
         assertEquals("DECIDE ENDPOINT", testConfig.getDecideEndpoint());
         assertEquals("DECIDE FALLBACK ENDPOINT", testConfig.getDecideFallbackEndpoint());
-    }
-
-    public void test2XUrls() {
-        final String twoXBalok = InAppNotification.sizeSuffixUrl("http://images.mxpnl.com/112690/1392337640909.49573.Balok_first.jpg", "@BANANAS");
-        assertEquals(twoXBalok, "http://images.mxpnl.com/112690/1392337640909.49573.Balok_first@BANANAS.jpg");
-
-        final String nothingMatches = InAppNotification.sizeSuffixUrl("http://images.mxpnl.com/112690/1392337640909.49573.Balok_first..", "@BANANAS");
-        assertEquals(nothingMatches, "http://images.mxpnl.com/112690/1392337640909.49573.Balok_first..");
-
-        final String emptyMatch = InAppNotification.sizeSuffixUrl("", "@BANANAS");
-        assertEquals(emptyMatch, "");
-
-        final String nothingExtensionful = InAppNotification.sizeSuffixUrl("http://images.mxpnl.com/112690/", "@BANANAS");
-        assertEquals(nothingExtensionful, "http://images.mxpnl.com/112690/");
     }
 
     public void testAlias() {

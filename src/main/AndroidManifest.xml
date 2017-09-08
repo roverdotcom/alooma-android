@@ -82,26 +82,5 @@
                   android:theme="@style/com_mixpanel_android_TakeoverInAppActivityTheme" />
         -->
 
-        <!-- This receiver will allow your application to register for and receive Mixpanel push notifications.
-             Make sure to change YOUR_PACKAGE_NAME to your own applications package. -->
-        <!--
-        <receiver android:name="com.mixpanel.android.mpmetrics.GCMReceiver"
-            android:permission="com.google.android.c2dm.permission.SEND" >
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
-                <category android:name="YOUR_PACKAGE_NAME" />
-            </intent-filter>
-        </receiver>
-        -->
-
-        <!-- This receiver will allow your application to record referrer parameters as super properties automatically -->
-        <!--
-        <receiver android:name="com.mixpanel.android.mpmetrics.InstallReferrerReceiver" android:exported="true">
-            <intent-filter>
-                <action android:name="com.android.vending.INSTALL_REFERRER" />
-            </intent-filter>
-        </receiver>
-        -->
     </application>
 </manifest>

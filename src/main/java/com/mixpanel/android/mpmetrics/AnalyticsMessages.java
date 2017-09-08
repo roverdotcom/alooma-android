@@ -81,36 +81,10 @@ import javax.net.ssl.SSLSocketFactory;
         mWorker.runMessage(m);
     }
 
-    // Must be thread safe.
-    public void peopleMessage(final PeopleDescription peopleDescription) {
-        final Message m = Message.obtain();
-        m.what = ENQUEUE_PEOPLE;
-        m.obj = peopleDescription;
-
-        mWorker.runMessage(m);
-    }
-
     public void postToServer(final FlushDescription flushDescription) {
         final Message m = Message.obtain();
         m.what = FLUSH_QUEUE;
         m.obj = flushDescription.getToken();
-        m.arg1 = flushDescription.shouldCheckDecide() ? 1 : 0;
-
-        mWorker.runMessage(m);
-    }
-
-    public void installDecideCheck(final DecideMessages check) {
-        final Message m = Message.obtain();
-        m.what = INSTALL_DECIDE_CHECK;
-        m.obj = check;
-
-        mWorker.runMessage(m);
-    }
-
-    public void registerForGCM(final String senderID) {
-        final Message m = Message.obtain();
-        m.what = REGISTER_FOR_GCM;
-        m.obj = senderID;
 
         mWorker.runMessage(m);
     }
@@ -168,35 +142,11 @@ import javax.net.ssl.SSLSocketFactory;
         private final boolean mIsAutomatic;
     }
 
-    static class PeopleDescription extends MixpanelDescription {
-        public PeopleDescription(JSONObject message, String token) {
-            super(token);
-            this.message = message;
-        }
-
-        public JSONObject getMessage() {
-            return message;
-        }
-
-
-        private final JSONObject message;
-    }
-
     static class FlushDescription extends MixpanelDescription {
         public FlushDescription(String token) {
-            this(token, true);
-        }
-
-        protected FlushDescription(String token, boolean checkDecide) {
             super(token);
-            this.checkDecide = checkDecide;
         }
 
-        public boolean shouldCheckDecide() {
-            return checkDecide;
-        }
-
-        private final boolean checkDecide;
     }
 
     static class MixpanelDescription {
@@ -260,13 +210,8 @@ import javax.net.ssl.SSLSocketFactory;
                 super(looper);
                 mDbAdapter = null;
                 mSystemInformation = new SystemInformation(mContext);
-                mDecideChecker = createDecideChecker();
                 mDisableFallback = mConfig.getDisableFallback();
                 mFlushInterval = mConfig.getFlushInterval();
-            }
-
-            protected DecideChecker createDecideChecker() {
-                return new DecideChecker(mContext, mConfig, mSystemInformation);
             }
 
             @Override
@@ -274,21 +219,13 @@ import javax.net.ssl.SSLSocketFactory;
                 if (mDbAdapter == null) {
                     mDbAdapter = makeDbAdapter(mContext);
                     mDbAdapter.cleanupEvents(System.currentTimeMillis() - mConfig.getDataExpiration(), MPDbAdapter.Table.EVENTS);
-                    mDbAdapter.cleanupEvents(System.currentTimeMillis() - mConfig.getDataExpiration(), MPDbAdapter.Table.PEOPLE);
                 }
 
                 try {
                     int returnCode = MPDbAdapter.DB_UNDEFINED_CODE;
                     String token = null;
 
-                    if (msg.what == ENQUEUE_PEOPLE) {
-                        final PeopleDescription message = (PeopleDescription) msg.obj;
-
-                        logAboutMessageToMixpanel("Queuing people record for sending later");
-                        logAboutMessageToMixpanel("    " + message.toString());
-                        token = message.getToken();
-                        returnCode = mDbAdapter.addJSON(message.getMessage(), token, MPDbAdapter.Table.PEOPLE, false);
-                    } else if (msg.what == ENQUEUE_EVENTS) {
+                    if (msg.what == ENQUEUE_EVENTS) {
                         final EventDescription eventDescription = (EventDescription) msg.obj;
                         try {
                             final JSONObject message = prepareEventObject(eventDescription);
@@ -296,10 +233,7 @@ import javax.net.ssl.SSLSocketFactory;
                             logAboutMessageToMixpanel("    " + message.toString());
                             token = eventDescription.getToken();
 
-                            DecideMessages decide = mDecideChecker.getDecideMessages(token);
-                            if (decide != null && eventDescription.isAutomatic() && !decide.shouldTrackAutomaticEvent()) {
-                                return;
-                            }
+
                             returnCode = mDbAdapter.addJSON(message, token, MPDbAdapter.Table.EVENTS, eventDescription.isAutomatic());
                         } catch (final JSONException e) {
                             MPLog.e(LOGTAG, "Exception tracking event " + eventDescription.getEventName(), e);
@@ -308,30 +242,10 @@ import javax.net.ssl.SSLSocketFactory;
                         logAboutMessageToMixpanel("Flushing queue due to scheduled or forced flush");
                         updateFlushFrequency();
                         token = (String) msg.obj;
-                        boolean shouldCheckDecide = msg.arg1 == 1 ? true : false;
                         sendAllData(mDbAdapter, token);
-                        if (shouldCheckDecide && SystemClock.elapsedRealtime() >= mDecideRetryAfter) {
-                            try {
-                                mDecideChecker.runDecideCheck(token, getPoster());
-                            } catch (RemoteService.ServiceUnavailableException e) {
-                                mDecideRetryAfter = SystemClock.elapsedRealtime() + e.getRetryAfter() * 1000;
-                            }
-                        }
-                    } else if (msg.what == INSTALL_DECIDE_CHECK) {
-                        logAboutMessageToMixpanel("Installing a check for in-app notifications");
-                        final DecideMessages check = (DecideMessages) msg.obj;
-                        mDecideChecker.addDecideCheck(check);
-                        if (SystemClock.elapsedRealtime() >= mDecideRetryAfter) {
-                            try {
-                                mDecideChecker.runDecideCheck(check.getToken(), getPoster());
-                            } catch (RemoteService.ServiceUnavailableException e) {
-                                mDecideRetryAfter = SystemClock.elapsedRealtime() + e.getRetryAfter() * 1000;
-                            }
-                        }
-                    } else if (msg.what == REGISTER_FOR_GCM) {
-                        final String senderId = (String) msg.obj;
-                        runGCMRegistration(senderId);
-                    } else if (msg.what == KILL_WORKER) {
+
+                    }
+                    else if (msg.what == KILL_WORKER) {
                         MPLog.w(LOGTAG, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                         synchronized(mHandlerLock) {
                             mDbAdapter.deleteDB();
@@ -347,13 +261,6 @@ import javax.net.ssl.SSLSocketFactory;
                         logAboutMessageToMixpanel("Flushing queue due to bulk upload limit (" + returnCode + ") for project " + token);
                         updateFlushFrequency();
                         sendAllData(mDbAdapter, token);
-                        if (SystemClock.elapsedRealtime() >= mDecideRetryAfter) {
-                            try {
-                                mDecideChecker.runDecideCheck(token, getPoster());
-                            } catch (RemoteService.ServiceUnavailableException e) {
-                                mDecideRetryAfter = SystemClock.elapsedRealtime() + e.getRetryAfter() * 1000;
-                            }
-                        }
                     } else if (returnCode > 0 && !hasMessages(FLUSH_QUEUE, token)) {
                         // The !hasMessages(FLUSH_QUEUE, token) check is a courtesy for the common case
                         // of delayed flushes already enqueued from inside of this thread.
@@ -388,47 +295,6 @@ import javax.net.ssl.SSLSocketFactory;
                 return mTrackEngageRetryAfter;
             }
 
-            private void runGCMRegistration(String senderID) {
-                final String registrationId;
-                try {
-                    // We don't actually require Google Play Services to be available
-                    // (since we can't specify what version customers will be using,
-                    // and because the latest Google Play Services actually have
-                    // dependencies on Java 7)
-
-                    // Consider adding a transitive dependency on the latest
-                    // Google Play Services version and requiring Java 1.7
-                    // in the next major library release.
-                    try {
-                        final int resultCode = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(mContext);
-                        if (resultCode != ConnectionResult.SUCCESS) {
-                            MPLog.i(LOGTAG, "Can't register for push notifications, Google Play Services are not installed.");
-                            return;
-                        }
-                    } catch (RuntimeException e) {
-                        MPLog.i(LOGTAG, "Can't register for push notifications, Google Play services are not configured.");
-                        return;
-                    }
-
-                    InstanceID instanceID = InstanceID.getInstance(mContext);
-                    registrationId = instanceID.getToken(senderID, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-                } catch (IOException e) {
-                    MPLog.i(LOGTAG, "Exception when trying to register for GCM", e);
-                    return;
-                } catch (NoClassDefFoundError e) {
-                    MPLog.w(LOGTAG, "Google play services were not part of this build, push notifications cannot be registered or delivered");
-                    return;
-                }
-
-                MixpanelAPI.allInstances(new MixpanelAPI.InstanceProcessor() {
-                    @Override
-                    public void process(MixpanelAPI api) {
-                        MPLog.v(LOGTAG, "Using existing pushId " + registrationId);
-                        api.getPeople().setPushRegistrationId(registrationId);
-                    }
-                });
-            }
-
             private void sendAllData(MPDbAdapter dbAdapter, String token) {
                 final RemoteService poster = getPoster();
                 if (!poster.isOnline(mContext, mConfig.getOfflineMode())) {
@@ -438,22 +304,15 @@ import javax.net.ssl.SSLSocketFactory;
 
                 if (mDisableFallback) {
                     sendData(dbAdapter, token, MPDbAdapter.Table.EVENTS, new String[]{ mConfig.getEventsEndpoint() });
-                    sendData(dbAdapter, token, MPDbAdapter.Table.PEOPLE, new String[]{ mConfig.getPeopleEndpoint() });
                 } else {
                     sendData(dbAdapter, token, MPDbAdapter.Table.EVENTS,
                              new String[]{ mConfig.getEventsEndpoint(), mConfig.getEventsFallbackEndpoint() });
-                    sendData(dbAdapter, token, MPDbAdapter.Table.PEOPLE,
-                             new String[]{ mConfig.getPeopleEndpoint(), mConfig.getPeopleFallbackEndpoint() });
                 }
             }
 
             private void sendData(MPDbAdapter dbAdapter, String token, MPDbAdapter.Table table, String[] urls) {
                 final RemoteService poster = getPoster();
-                DecideMessages decideMessages = mDecideChecker.getDecideMessages(token);
                 boolean includeAutomaticEvents = true;
-                if (decideMessages == null || decideMessages.isAutomaticEventsEnabled() == null) {
-                    includeAutomaticEvents = false;
-                }
                 String[] eventsData = dbAdapter.generateDataString(table, token, includeAutomaticEvents);
                 Integer queueCount = 0;
                 if (eventsData != null) {
@@ -645,10 +504,8 @@ import javax.net.ssl.SSLSocketFactory;
             }
 
             private MPDbAdapter mDbAdapter;
-            private final DecideChecker mDecideChecker;
             private final long mFlushInterval;
             private final boolean mDisableFallback;
-            private long mDecideRetryAfter;
             private long mTrackEngageRetryAfter;
             private int mFailedRetries;
         }// AnalyticsMessageHandler
@@ -689,12 +546,9 @@ import javax.net.ssl.SSLSocketFactory;
     protected final MPConfig mConfig;
 
     // Messages for our thread
-    private static final int ENQUEUE_PEOPLE = 0; // submit events and people data
-    private static final int ENQUEUE_EVENTS = 1; // push given JSON message to people DB
+    private static final int ENQUEUE_EVENTS = 1; // push given JSON message to event DB
     private static final int FLUSH_QUEUE = 2; // push given JSON message to events DB
     private static final int KILL_WORKER = 5; // Hard-kill the worker thread, discarding all events on the event queue. This is for testing, or disasters.
-    private static final int INSTALL_DECIDE_CHECK = 12; // Run this DecideCheck at intervals until it isDestroyed()
-    private static final int REGISTER_FOR_GCM = 13; // Register for GCM using Google Play Services
 
     private static final String LOGTAG = "MixpanelAPI.Messages";
 
