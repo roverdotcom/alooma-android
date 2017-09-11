@@ -30,7 +30,7 @@ import java.util.Random;
  * For more information about integrating Alooma with your Android application,
  * please check out:
  *
- *     https://alooma.com/docs/integration-libraries/android
+ *     https://mixpanel.com/docs/integration-libraries/android
  *
  * @author alooma
  *

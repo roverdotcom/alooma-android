@@ -23,7 +23,7 @@
 <a name="quick-start-guide"></a>
 # Quick Start Guide
 
-Check out our **[official documentation](https://alooma.com/help/reference/android)** for more in depth information on installing and using Alooma on Android.
+Check out our **[official documentation](https://mixpanel.com/help/reference/android)** for more in depth information on installing and using Alooma on Android.
 
 <a name="installation"></a>
 ## Installation
@@ -56,7 +56,7 @@ Initialize Alooma in your main activity *app/src/main/java/com/alooma/example/my
 String projectToken = YOUR_PROJECT_TOKEN; // e.g.: "1ef7e30d2a58d27f4b90c42e31d6d7ad" 
 AloomaAPI alooma = AloomaAPI.getInstance(this, projectToken);
 ```
-Remember to replace `YOUR_PROJECT_TOKEN` with the token provided to you on alooma.com.
+Remember to replace `YOUR_PROJECT_TOKEN` with the token provided to you on mixpanel.com.
 
 ### Tracking
 
@@ -79,13 +79,13 @@ No worries, here are some links that you will find useful:
 * **[Android integration video tutorial](https://www.youtube.com/watch?v=KcpOa93eSVs)**
 * **[Full API Reference](http://alooma.github.io/alooma-android/index.html)**
 
-Have any questions? Reach out to [support@alooma.com](mailto:support@alooma.com) to speak to someone smart, quickly.
+Have any questions? Reach out to [support@mixpanel.com](mailto:support@mixpanel.com) to speak to someone smart, quickly.
 
 <a name="want-to-contribute"></a>
 # Want to Contribute?
 
 The Alooma library for Android is an open source project, and we'd love to see your contributions!
-We'd also love for you to come and work with us! Check out our **[opening positions](https://alooma.com/jobs/#openings)** for details.
+We'd also love for you to come and work with us! Check out our **[opening positions](https://mixpanel.com/jobs/#openings)** for details.
 
 <a name="changelog"></a>
 # Changelog

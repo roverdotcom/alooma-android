@@ -71,10 +71,10 @@ import java.util.concurrent.Future;
  * <a href="https://github.com/alooma/sample-android-alooma-integration">the Alooma sample Android application</a>.
  * It demonstrates a variety of techniques
  *
- * <p>There are also <a href="https://alooma.com/docs/">step-by-step getting started documents</a>
- * available at alooma.com
+ * <p>There are also <a href="https://mixpanel.com/docs/">step-by-step getting started documents</a>
+ * available at mixpanel.com
  *
- * @see <a href="https://alooma.com/docs/integration-libraries/android">getting started documentation for tracking events</a>
+ * @see <a href="https://mixpanel.com/docs/integration-libraries/android">getting started documentation for tracking events</a>
  * @see <a href="https://github.com/alooma/sample-android-alooma-integration">The Alooma Android sample application</a>
  */
 public class AloomaAPI {

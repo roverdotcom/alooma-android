@@ -189,31 +189,31 @@ public class ALConfig {
 
         String eventsEndpoint = metaData.getString("com.alooma.android.ALConfig.EventsEndpoint");
         if (null == eventsEndpoint) {
-            eventsEndpoint = "https://api.alooma.com/track?ip=1";
+            eventsEndpoint = "https://api.mixpanel.com/track?ip=1";
         }
         mEventsEndpoint = eventsEndpoint;
 
         String eventsFallbackEndpoint = metaData.getString("com.alooma.android.ALConfig.EventsFallbackEndpoint");
         if (null == eventsFallbackEndpoint) {
-            eventsFallbackEndpoint = "http://api.alooma.com/track?ip=1";
+            eventsFallbackEndpoint = "http://api.mixpanel.com/track?ip=1";
         }
         mEventsFallbackEndpoint = eventsFallbackEndpoint;
 
         String decideEndpoint = metaData.getString("com.alooma.android.ALConfig.DecideEndpoint");
         if (null == decideEndpoint) {
-            decideEndpoint = "https://decide.alooma.com/decide";
+            decideEndpoint = "https://decide.mixpanel.com/decide";
         }
         mDecideEndpoint = decideEndpoint;
 
         String decideFallbackEndpoint = metaData.getString("com.alooma.android.ALConfig.DecideFallbackEndpoint");
         if (null == decideFallbackEndpoint) {
-            decideFallbackEndpoint = "http://decide.alooma.com/decide";
+            decideFallbackEndpoint = "http://decide.mixpanel.com/decide";
         }
         mDecideFallbackEndpoint = decideFallbackEndpoint;
 
         String editorUrl = metaData.getString("com.alooma.android.ALConfig.EditorUrl");
         if (null == editorUrl) {
-            editorUrl = "wss://switchboard.alooma.com/connect/";
+            editorUrl = "wss://switchboard.mixpanel.com/connect/";
         }
         mEditorUrl = editorUrl;
 
