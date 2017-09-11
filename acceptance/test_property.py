@@ -7,7 +7,7 @@ class AndroidTest(unittest.TestCase):
         f.write(decide_message)
         f.close()
 
-        desired_capabilities = {'aut': 'com.mixpanel.example.hello:1.0'}
+        desired_capabilities = {'aut': 'alooma.example.hello:1.0'}
         self.driver = webdriver.Remote(
             desired_capabilities=desired_capabilities
         )

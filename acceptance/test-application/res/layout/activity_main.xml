@@ -25,27 +25,13 @@
         android:hint="@string/edit_email_address" />
 
     <Button
-        android:id="@+id/send_to_mixpanel"
+        android:id="@+id/send_to_alooma"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/button_send"
         android:layout_below="@id/edit_email_address"
-        android:onClick="sendToMixpanel" />
+        android:onClick="sendToAlooma" />
 
-    <Button
-        android:id="@+id/send_revenue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/button_buy"
-        android:layout_below="@id/send_to_mixpanel"
-        android:onClick="recordRevenue" />
 
-    <Button
-        android:id="@+id/set_background_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/button_background"
-        android:layout_below="@id/send_revenue"
-        android:onClick="setBackgroundImage" />
 </RelativeLayout>
 

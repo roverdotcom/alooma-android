@@ -1,8 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mixpanel.android">
+    package="com.alooma.android">
 
     <!--
-      This permission is required to allow the application to send events and properties to Mixpanel.
+      This permission is required to allow the application to send events and properties to Alooma.
      -->
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -21,7 +21,7 @@
     -->
     <!--
       These permissions are required to allow the application to receive and display
-      Google Cloud Messaging notifications from Mixpanel. If you want Android push notifications
+      Google Cloud Messaging notifications from Alooma. If you want Android push notifications
       to work, then enable these permissions.
      -->
     <!--
@@ -46,40 +46,40 @@
         <!-- to support 2.2 (Froyo) and older devices, your application should allow fallback
              to HTTP if modern HTTPS certificates aren't supported. -->
         <!--
-        <meta-data android:name="com.mixpanel.android.MPConfig.DisableFallback"
+        <meta-data android:name="aloomandroid.ALConfig.DisableFallback"
             android:value="false" />
         -->
 
-        <!-- The Mixpanel library will automatically attempt to show available in
+        <!-- The Alooma library will automatically attempt to show available in
              app notifications every time a new Activity is displayed. To disable this behavior,
              add the following line. The default value for this option is set to true. -->
         <!--
-        <meta-data android:name="com.mixpanel.android.MPConfig.AutoShowMixpanelUpdates"
+        <meta-data android:name="aloomandroid.ALConfig.AutoShowAloomaUpdates"
             android:value="false" />
         -->
 
         <!-- Set this option to true if you wish for in-app notifications to be displayed without
-             being tracked by Mixpanel. This is useful for testing the integration with your Android app.
+             being tracked by Alooma. This is useful for testing the integration with your Android app.
              The default value is false. -->
         <!--
-        <meta-data android:name="com.mixpanel.android.MPConfig.TestMode"
+        <meta-data android:name="aloomandroid.ALConfig.TestMode"
             android:value="true" />
         -->
 
-        <!-- Set the following option to true if you wish to see the debug output from the Mixpanel Android
+        <!-- Set the following option to true if you wish to see the debug output from the Alooma Android
              library. This may be useful in determining when track calls go out or in-app notifications
              are fetched. The default value is false. -->
         <!--
-        <meta-data android:name="com.mixpanel.android.MPConfig.EnableDebugLogging"
+        <meta-data android:name="aloomandroid.ALConfig.EnableDebugLogging"
             android:value="true" />
         -->
 
-        <!-- This activity allows your application to show Mixpanel takeover in-app notifications.
+        <!-- This activity allows your application to show Alooma takeover in-app notifications.
              If you only wish to show mini in-app notifications, you do not need to declare this Activity.
              You may also specify a different theme to better fit the look and feel of your application. -->
         <!--
-        <activity android:name="com.mixpanel.android.takeoverinapp.TakeoverInAppActivity"
-                  android:theme="@style/com_mixpanel_android_TakeoverInAppActivityTheme" />
+        <activity android:name="aloomandroid.takeoverinapp.TakeoverInAppActivity"
+                  android:theme="@style/com_alooma_android_TakeoverInAppActivityTheme" />
         -->
 
     </application>

@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://github.com/mixpanel/mixpanel-android/blob/assets/mixpanel.png?raw=true" alt="Mixpanel Android Library" height="150"/>
+  <img src="https://github.com/alooma/alooma-android/blob/assets/alooma.png?raw=true" alt="Alooma Android Library" height="150"/>
 </p>
 
-# Latest Version [![Build Status](https://travis-ci.org/mixpanel/mixpanel-android.svg)](https://travis-ci.org/mixpanel/mixpanel-android)
+# Latest Version [![Build Status](https://travis-ci.org/alooma/alooma-android.svg)](https://travis-ci.org/alooma/alooma-android)
 
-##### _June 23, 2017_ - [v5.1.4](https://github.com/mixpanel/mixpanel-android/releases/tag/v5.1.4)
+##### _June 23, 2017_ - [v5.1.4](https://github.com/alooma/alooma-android/releases/tag/v5.1.4)
 
 # Table of Contents
 
@@ -23,17 +23,17 @@
 <a name="quick-start-guide"></a>
 # Quick Start Guide
 
-Check out our **[official documentation](https://mixpanel.com/help/reference/android)** for more in depth information on installing and using Mixpanel on Android.
+Check out our **[official documentation](https://alooma.com/help/reference/android)** for more in depth information on installing and using Alooma on Android.
 
 <a name="installation"></a>
 ## Installation
 
 ### Dependencies in *app/build.gradle*
 
-Add Mixpanel and Google Play Services to the `dependencies` section in *app/build.gradle*
+Add Alooma and Google Play Services to the `dependencies` section in *app/build.gradle*
 
 ```gradle
-compile "com.mixpanel.android:mixpanel-android:5.+"
+compile "alooma.android:alooma-android:5.+"
 compile "com.google.android.gms:play-services:7.5.0+"
 ```
 
@@ -50,47 +50,47 @@ compile "com.google.android.gms:play-services:7.5.0+"
 
 ### Initialization
 
-Initialize Mixpanel in your main activity *app/src/main/java/com/mixpanel/example/myapplication/MainActivity.java*. Usually this should be done in [onCreate](https://developer.android.com/reference/android/app/Activity.html#onCreate(android.os.Bundle)).
+Initialize Alooma in your main activity *app/src/main/java/com/alooma/example/myapplication/MainActivity.java*. Usually this should be done in [onCreate](https://developer.android.com/reference/android/app/Activity.html#onCreate(android.os.Bundle)).
 
 ```java
 String projectToken = YOUR_PROJECT_TOKEN; // e.g.: "1ef7e30d2a58d27f4b90c42e31d6d7ad" 
-MixpanelAPI mixpanel = MixpanelAPI.getInstance(this, projectToken);
+AloomaAPI alooma = AloomaAPI.getInstance(this, projectToken);
 ```
-Remember to replace `YOUR_PROJECT_TOKEN` with the token provided to you on mixpanel.com.
+Remember to replace `YOUR_PROJECT_TOKEN` with the token provided to you on alooma.com.
 
 ### Tracking
 
-With the `mixpanel` object created in [the last step](#integration) a call to `track` is all you need to start sending events to Mixpanel.
+With the `alooma` object created in [the last step](#integration) a call to `track` is all you need to start sending events to Alooma.
 
 ```java
-mixpanel.track("Event name no props")
+alooma.track("Event name no props")
 
 JSONObject props = new JSONObject();
 props.put("Prop name", "Prop value");
 props.put("Prop 2", "Value 2");
-mixpanel.track("Event name", props);
+alooma.track("Event name", props);
 ```
 
 <a name="i-want-to-know-more"></a>
 # I want to know more!
 
 No worries, here are some links that you will find useful:
-* **[Sample app](https://github.com/mixpanel/sample-android-mixpanel-integration)**
+* **[Sample app](https://github.com/alooma/sample-android-alooma-integration)**
 * **[Android integration video tutorial](https://www.youtube.com/watch?v=KcpOa93eSVs)**
-* **[Full API Reference](http://mixpanel.github.io/mixpanel-android/index.html)**
+* **[Full API Reference](http://alooma.github.io/alooma-android/index.html)**
 
-Have any questions? Reach out to [support@mixpanel.com](mailto:support@mixpanel.com) to speak to someone smart, quickly.
+Have any questions? Reach out to [support@alooma.com](mailto:support@alooma.com) to speak to someone smart, quickly.
 
 <a name="want-to-contribute"></a>
 # Want to Contribute?
 
-The Mixpanel library for Android is an open source project, and we'd love to see your contributions!
-We'd also love for you to come and work with us! Check out our **[opening positions](https://mixpanel.com/jobs/#openings)** for details.
+The Alooma library for Android is an open source project, and we'd love to see your contributions!
+We'd also love for you to come and work with us! Check out our **[opening positions](https://alooma.com/jobs/#openings)** for details.
 
 <a name="changelog"></a>
 # Changelog
 
-See [wiki page](https://github.com/mixpanel/mixpanel-android/wiki/Changelog).
+See [wiki page](https://github.com/alooma/alooma-android/wiki/Changelog).
 
 <a name="license"></a>
 # License
@@ -98,10 +98,10 @@ See [wiki page](https://github.com/mixpanel/mixpanel-android/wiki/Changelog).
 ```
 See LICENSE File for details. The Base64Coder,
 ConfigurationChecker, and StackBlurManager classes, and the entirety of the
- com.mixpanel.android.java_websocket package used by this
-software have been licensed from non-Mixpanel sources and modified
+ alooma.android.java_websocket package used by this
+software have been licensed from non-Alooma sources and modified
 for use in the library. Please see the relevant source files, and the
-LICENSE file in the com.mixpanel.android.java_websocket package for details.
+LICENSE file in the alooma.android.java_websocket package for details.
 
 The StackBlurManager class uses an algorithm by Mario Klingemann <mario@quansimondo.com>
 You can learn more about the algorithm at

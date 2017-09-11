@@ -26,11 +26,11 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23
-        testApplicationId "com.mixpanel.android.mpmetrics"
+        testApplicationId "com.alooma.android.mpmetrics"
         testInstrumentationRunner "android.test.InstrumentationTestRunner"
         consumerProguardFiles 'proguard.txt'
 
-        buildConfigField "String", "MIXPANEL_VERSION", "\"${version}\""
+        buildConfigField "String", "ALOOMA_VERSION", "\"${version}\""
 
         lintOptions {
             abortOnError true
