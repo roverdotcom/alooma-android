@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://github.com/alooma/alooma-android/blob/assets/alooma.png?raw=true" alt="Alooma Android Library" height="150"/>
+  <img src="https://github.com/aloomaio/androidsdk/blob/assets/alooma.png?raw=true" alt="Alooma Android Library" height="150"/>
 </p>
 
 # Latest Version [![Build Status](https://travis-ci.org/alooma/alooma-android.svg)](https://travis-ci.org/alooma/alooma-android)
 
-##### _June 23, 2017_ - [v5.1.4](https://github.com/alooma/alooma-android/releases/tag/v5.1.4)
+##### _June 23, 2017_ - [v5.1.4](https://github.com/aloomaio/androidsdk/releases/tag/v5.1.4)
 
 # Table of Contents
 
@@ -23,7 +23,7 @@
 <a name="quick-start-guide"></a>
 # Quick Start Guide
 
-Check out our **[official documentation](https://mixpanel.com/help/reference/android)** for more in depth information on installing and using Alooma on Android.
+Check out our **[official documentation](https://support.alooma.com/hc/en-us/articles/214019489-Android-SDK-integration)** for more in depth information on installing and using Alooma on Android.
 
 <a name="installation"></a>
 ## Installation
@@ -33,7 +33,7 @@ Check out our **[official documentation](https://mixpanel.com/help/reference/and
 Add Alooma and Google Play Services to the `dependencies` section in *app/build.gradle*
 
 ```gradle
-compile "alooma.android:alooma-android:5.+"
+compile "com.alooma.android:alooma-android:5.+"
 compile "com.google.android.gms:play-services:7.5.0+"
 ```
 
@@ -56,7 +56,7 @@ Initialize Alooma in your main activity *app/src/main/java/com/alooma/example/my
 String projectToken = YOUR_PROJECT_TOKEN; // e.g.: "1ef7e30d2a58d27f4b90c42e31d6d7ad" 
 AloomaAPI alooma = AloomaAPI.getInstance(this, projectToken);
 ```
-Remember to replace `YOUR_PROJECT_TOKEN` with the token provided to you on mixpanel.com.
+Remember to replace `YOUR_PROJECT_TOKEN` with the token provided to you on alooma.com.
 
 ### Tracking
 
@@ -75,22 +75,22 @@ alooma.track("Event name", props);
 # I want to know more!
 
 No worries, here are some links that you will find useful:
-* **[Sample app](https://github.com/alooma/sample-android-alooma-integration)**
+* **[Sample app](https://github.com/aloomaio/sample-android-alooma-integration)**
 * **[Android integration video tutorial](https://www.youtube.com/watch?v=KcpOa93eSVs)**
-* **[Full API Reference](http://alooma.github.io/alooma-android/index.html)**
+* **[Full API Reference](https://support.alooma.com/hc/en-us/articles/214019489-Android-SDK-integration)**
 
-Have any questions? Reach out to [support@mixpanel.com](mailto:support@mixpanel.com) to speak to someone smart, quickly.
+Have any questions? Reach out to [support@alooma.com](mailto:support@alooma.com) to speak to someone smart, quickly.
 
 <a name="want-to-contribute"></a>
 # Want to Contribute?
 
 The Alooma library for Android is an open source project, and we'd love to see your contributions!
-We'd also love for you to come and work with us! Check out our **[opening positions](https://mixpanel.com/jobs/#openings)** for details.
+We'd also love for you to come and work with us! Check out our **[opening positions](https://alooma.com/jobs/#openings)** for details.
 
 <a name="changelog"></a>
 # Changelog
 
-See [wiki page](https://github.com/alooma/alooma-android/wiki/Changelog).
+See [wiki page](https://github.com/aloomaio/androidsdk/wiki/Changelog).
 
 <a name="license"></a>
 # License

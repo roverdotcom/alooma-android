@@ -57,12 +57,6 @@ import javax.net.ssl.SSLSocketFactory;
  *     <dt>com.alooma.android.ALConfig.EventsFallbackEndpoint</dt>
  *     <dd>A string URL. If present, AND if DisableFallback is false, events will be sent to this endpoint if the EventsEndpoint cannot be reached.</dd>
  *
- *     <dt>com.alooma.android.ALConfig.DecideEndpoint</dt>
- *     <dd>A string URL. If present, the library will attempt to get notification, codeless event tracking, and A/B test variant information from this url rather than the default Alooma endpoint.</dd>
- *
- *     <dt>com.alooma.android.ALConfig.DecideFallbackEndpoint</dt>
- *     <dd>A string URL. If present, AND if DisableFallback is false, the library will query this url if the DecideEndpoint url cannot be reached.</dd>
- *
  *     <dt>com.alooma.android.ALConfig.EditorUrl</dt>
  *     <dd>A string URL. If present, the library will attempt to connect to this endpoint when in interactive editing mode, rather than to the default Alooma editor url.</dd>
  * </dl>
@@ -70,22 +64,12 @@ import javax.net.ssl.SSLSocketFactory;
  */
 public class ALConfig {
 
-    public static final String VERSION = BuildConfig.ALOOMA_VERSION; //MJA
+    public static final String VERSION = BuildConfig.ALOOMA_VERSION;
 
     public static boolean DEBUG = false;
 
-    /**
-     * Minimum API level for support of rich UI features, like In-App notifications and dynamic event binding.
-     * Devices running OS versions below this level will still support tracking and push notification features.
-     */
-    public static final int UI_FEATURES_MIN_API = 16;
-
     // Name for persistent storage of app referral SharedPreferences
     /* package */ static final String REFERRER_PREFS_NAME = "com.alooma.android.mpmetrics.ReferralInfo";
-
-    // Max size of the number of notifications we will hold in memory. Since they may contain images,
-    // we don't want to suck up all of the memory on the device.
-    /* package */ static final int MAX_NOTIFICATION_CACHE_COUNT = 2;
 
     // Instances are safe to store, since they're immutable and always the same.
     public static ALConfig getInstance(Context context) {
@@ -181,7 +165,6 @@ public class ALConfig {
         mMinimumDatabaseLimit = metaData.getInt("com.alooma.android.ALConfig.MinimumDatabaseLimit", 20 * 1024 * 1024); // 20 Mb
         mDisableFallback = metaData.getBoolean("com.alooma.android.ALConfig.DisableFallback", true);
         mDisableAppOpenEvent = metaData.getBoolean("com.alooma.android.ALConfig.DisableAppOpenEvent", true);
-        mDisableDecideChecker = metaData.getBoolean("com.alooma.android.ALConfig.DisableDecideChecker", false);
         mMinSessionDuration = metaData.getInt("com.alooma.android.ALConfig.MinimumSessionDuration", 10 * 1000); // 10 seconds
         mSessionTimeoutDuration = metaData.getInt("com.alooma.android.ALConfig.SessionTimeoutDuration", Integer.MAX_VALUE); // no timeout by default
 
@@ -189,31 +172,19 @@ public class ALConfig {
 
         String eventsEndpoint = metaData.getString("com.alooma.android.ALConfig.EventsEndpoint");
         if (null == eventsEndpoint) {
-            eventsEndpoint = "https://api.mixpanel.com/track?ip=1";
+            eventsEndpoint = "https://api.alooma.com/track?ip=1";
         }
         mEventsEndpoint = eventsEndpoint;
 
         String eventsFallbackEndpoint = metaData.getString("com.alooma.android.ALConfig.EventsFallbackEndpoint");
         if (null == eventsFallbackEndpoint) {
-            eventsFallbackEndpoint = "http://api.mixpanel.com/track?ip=1";
+            eventsFallbackEndpoint = "http://api.alooma.com/track?ip=1";
         }
         mEventsFallbackEndpoint = eventsFallbackEndpoint;
 
-        String decideEndpoint = metaData.getString("com.alooma.android.ALConfig.DecideEndpoint");
-        if (null == decideEndpoint) {
-            decideEndpoint = "https://decide.mixpanel.com/decide";
-        }
-        mDecideEndpoint = decideEndpoint;
-
-        String decideFallbackEndpoint = metaData.getString("com.alooma.android.ALConfig.DecideFallbackEndpoint");
-        if (null == decideFallbackEndpoint) {
-            decideFallbackEndpoint = "http://decide.mixpanel.com/decide";
-        }
-        mDecideFallbackEndpoint = decideFallbackEndpoint;
-
         String editorUrl = metaData.getString("com.alooma.android.ALConfig.EditorUrl");
         if (null == editorUrl) {
-            editorUrl = "wss://switchboard.mixpanel.com/connect/";
+            editorUrl = "wss://switchboard.alooma.com/connect/";
         }
         mEditorUrl = editorUrl;
 
@@ -228,11 +199,8 @@ public class ALConfig {
                 "    EnableDebugLogging " + DEBUG + "\n" +
                 "    TestMode " + getTestMode() + "\n" +
                 "    EventsEndpoint " + getEventsEndpoint() + "\n" +
-                "    DecideEndpoint " + getDecideEndpoint() + "\n" +
                 "    EventsFallbackEndpoint " + getEventsFallbackEndpoint() + "\n" +
-                "    DecideFallbackEndpoint " + getDecideFallbackEndpoint() + "\n" +
                 "    EditorUrl " + getEditorUrl() + "\n" +
-                "    DisableDecideChecker " + getDisableDecideChecker() + "\n" +
                 "    MinimumSessionDuration: " + getMinimumSessionDuration() + "\n" +
                 "    SessionTimeoutDuration: " + getSessionTimeoutDuration()
             );
@@ -272,28 +240,14 @@ public class ALConfig {
         return mEventsEndpoint;
     }
 
-    // Preferred URL for pulling decide data
-    public String getDecideEndpoint() {
-        return mDecideEndpoint;
-    }
-
     // Fallback URL for tracking events if post to preferred URL fails
     public String getEventsFallbackEndpoint() {
         return mEventsFallbackEndpoint;
     }
 
-    // Fallback URL for pulling decide data if preferred URL fails
-    public String getDecideFallbackEndpoint() {
-        return mDecideFallbackEndpoint;
-    }
-
     // Preferred URL for connecting to the editor websocket
     public String getEditorUrl() {
         return mEditorUrl;
-    }
-
-    public boolean getDisableDecideChecker() {
-        return mDisableDecideChecker;
     }
 
     public int getMinimumSessionDuration() {
@@ -342,10 +296,7 @@ public class ALConfig {
     private final boolean mDisableAppOpenEvent;
     private final String mEventsEndpoint;
     private final String mEventsFallbackEndpoint;
-    private final String mDecideEndpoint;
-    private final String mDecideFallbackEndpoint;
     private final String mEditorUrl;
-    private final boolean mDisableDecideChecker;
     private final int mMinSessionDuration;
     private final int mSessionTimeoutDuration;
 

@@ -15,8 +15,8 @@
  *
  * In addition to this reference documentation, you can also see our overview
  * and getting started documentation at
- * <a href="https://mixpanel.com/help/reference/android" target="_blank"
- *    >https://mixpanel.com/help/reference/android</a>
+ * <a href="https://support.alooma.com/hc/en-us/articles/214019489-Android-SDK-integration" target="_blank"
+ *    >https://support.alooma.com/hc/en-us/articles/214019489-Android-SDK-integration</a>
  *
  */
 package com.alooma.android.mpmetrics;

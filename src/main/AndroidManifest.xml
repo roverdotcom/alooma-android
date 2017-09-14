@@ -19,28 +19,6 @@
     <!--
     <uses-permission android:name="android.permission.BLUETOOTH" />
     -->
-    <!--
-      These permissions are required to allow the application to receive and display
-      Google Cloud Messaging notifications from Alooma. If you want Android push notifications
-      to work, then enable these permissions.
-     -->
-    <!--
-    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    -->
-
-    <!--
-      This custom permission is also required for Google Cloud Messaging. In your
-      own applications, you will need to be sure that the permission name is
-
-           ${application_package}.C2D_MESSAGE
-
-      where ${application_package} is the package name declared in your <manifest> element.
-     -->
-    <!--
-    <permission android:name="${application_package}.permission.C2D_MESSAGE" android:protectionLevel="signature" />
-    <uses-permission android:name="${application_package}.permission.C2D_MESSAGE" />
-    -->
 
     <application>
         <!-- to support 2.2 (Froyo) and older devices, your application should allow fallback
@@ -50,22 +28,6 @@
             android:value="false" />
         -->
 
-        <!-- The Alooma library will automatically attempt to show available in
-             app notifications every time a new Activity is displayed. To disable this behavior,
-             add the following line. The default value for this option is set to true. -->
-        <!--
-        <meta-data android:name="aloomandroid.ALConfig.AutoShowAloomaUpdates"
-            android:value="false" />
-        -->
-
-        <!-- Set this option to true if you wish for in-app notifications to be displayed without
-             being tracked by Alooma. This is useful for testing the integration with your Android app.
-             The default value is false. -->
-        <!--
-        <meta-data android:name="aloomandroid.ALConfig.TestMode"
-            android:value="true" />
-        -->
-
         <!-- Set the following option to true if you wish to see the debug output from the Alooma Android
              library. This may be useful in determining when track calls go out or in-app notifications
              are fetched. The default value is false. -->
@@ -73,14 +35,5 @@
         <meta-data android:name="aloomandroid.ALConfig.EnableDebugLogging"
             android:value="true" />
         -->
-
-        <!-- This activity allows your application to show Alooma takeover in-app notifications.
-             If you only wish to show mini in-app notifications, you do not need to declare this Activity.
-             You may also specify a different theme to better fit the look and feel of your application. -->
-        <!--
-        <activity android:name="aloomandroid.takeoverinapp.TakeoverInAppActivity"
-                  android:theme="@style/com_alooma_android_TakeoverInAppActivityTheme" />
-        -->
-
     </application>
 </manifest>

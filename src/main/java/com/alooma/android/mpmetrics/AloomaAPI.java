@@ -68,14 +68,14 @@ import java.util.concurrent.Future;
  * </pre>
  *
  * <p>In addition to this documentation, you may wish to take a look at
- * <a href="https://github.com/alooma/sample-android-alooma-integration">the Alooma sample Android application</a>.
+ * <a href="https://github.com/aloomaio/sample-android-alooma-integration">the Alooma sample Android application</a>.
  * It demonstrates a variety of techniques
  *
- * <p>There are also <a href="https://mixpanel.com/docs/">step-by-step getting started documents</a>
- * available at mixpanel.com
+ * <p>There are also <a href="https://support.alooma.com/hc/en-us/articles/214019489-Android-SDK-integration">step-by-step getting started documents</a>
+ * available at alooma.com
  *
- * @see <a href="https://mixpanel.com/docs/integration-libraries/android">getting started documentation for tracking events</a>
- * @see <a href="https://github.com/alooma/sample-android-alooma-integration">The Alooma Android sample application</a>
+ * @see <a href="https://support.alooma.com/hc/en-us/articles/214019489-Android-SDK-integration">getting started documentation for tracking events</a>
+ * @see <a href="https://github.com/aloomaio/sample-android-alooma-integration">The Alooma Android sample application</a>
  */
 public class AloomaAPI {
     /**
@@ -87,15 +87,15 @@ public class AloomaAPI {
      * You shouldn't instantiate AloomaAPI objects directly.
      * Use AloomaAPI.getInstance to get an instance.
      */
-    AloomaAPI(Context context, Future<SharedPreferences> referrerPreferences, String token) {
-        this(context, referrerPreferences, token, ALConfig.getInstance(context));
+    AloomaAPI(Context context, String token) {
+        this(context, token, ALConfig.getInstance(context));
     }
 
     /**
      * You shouldn't instantiate AloomaAPI objects directly.
      * Use AloomaAPI.getInstance to get an instance.
      */
-    AloomaAPI(Context context, Future<SharedPreferences> referrerPreferences, String token, ALConfig config) {
+    AloomaAPI(Context context, String token, ALConfig config) {
         mContext = context;
         mToken = token;
         mConfig = config;
@@ -116,7 +116,7 @@ public class AloomaAPI {
             ALLog.e(LOGTAG, "Exception getting app version name", e);
         }
         mDeviceInfo = Collections.unmodifiableMap(deviceInfo);
-        mPersistentIdentity = getPersistentIdentity(context, referrerPreferences, token);
+        mPersistentIdentity = getPersistentIdentity(context, token);
         mEventTimings = mPersistentIdentity.getTimeEvents();
 
         mMessages = getAnalyticsMessages();
@@ -195,10 +195,6 @@ public class AloomaAPI {
         synchronized (sInstanceMap) {
             final Context appContext = context.getApplicationContext();
 
-            if (null == sReferrerPrefs) {
-                sReferrerPrefs = sPrefsLoader.loadPreferences(context, ALConfig.REFERRER_PREFS_NAME, null);
-            }
-
             Map <Context, AloomaAPI> instances = sInstanceMap.get(token);
             if (null == instances) {
                 instances = new HashMap<Context, AloomaAPI>();
@@ -207,7 +203,7 @@ public class AloomaAPI {
 
             AloomaAPI instance = instances.get(appContext);
             if (null == instance && ConfigurationChecker.checkBasicConfiguration(appContext)) {
-                instance = new AloomaAPI(appContext, sReferrerPrefs, token);
+                instance = new AloomaAPI(appContext, token);
                 instances.put(appContext, instance);
             }
             return instance;
@@ -267,7 +263,6 @@ public class AloomaAPI {
     public void identify(String distinctId) {
         synchronized (mPersistentIdentity) {
             mPersistentIdentity.setEventsDistinctId(distinctId);
-            String decideId = mPersistentIdentity.getEventsDistinctId();
         }
     }
 
@@ -635,7 +630,7 @@ public class AloomaAPI {
         return AnalyticsMessages.getInstance(mContext);
     }
 
-    /* package */ PersistentIdentity getPersistentIdentity(final Context context, Future<SharedPreferences> referrerPreferences, final String token) {
+    /* package */ PersistentIdentity getPersistentIdentity(final Context context, final String token) {
 
         final String prefsName = "com.alooma.android.mpmetrics.AloomaAPI_" + token;
         final Future<SharedPreferences> storedPreferences = sPrefsLoader.loadPreferences(context, prefsName, null);
@@ -646,7 +641,7 @@ public class AloomaAPI {
         final String aloomaPrefsName = "com.alooma.android.mpmetrics.Alooma";
         final Future<SharedPreferences> aloomaPrefs = sPrefsLoader.loadPreferences(context, aloomaPrefsName, null);
 
-        return new PersistentIdentity(referrerPreferences, storedPreferences, timeEventsPrefs, aloomaPrefs);
+        return new PersistentIdentity(storedPreferences, timeEventsPrefs, aloomaPrefs);
     }
 
 
@@ -673,13 +668,6 @@ public class AloomaAPI {
 
         try {
             final JSONObject messageProps = new JSONObject();
-
-            final Map<String, String> referrerProperties = mPersistentIdentity.getReferrerProperties();
-            for (final Map.Entry<String, String> entry : referrerProperties.entrySet()) {
-                final String key = entry.getKey();
-                final String value = entry.getValue();
-                messageProps.put(key, value);
-            }
 
             mPersistentIdentity.addSuperPropertiesToObject(messageProps);
 

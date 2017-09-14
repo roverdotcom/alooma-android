@@ -30,8 +30,6 @@ import com.alooma.android.util.ALLog;
 
     public static String LOGTAG = "AloomaAPI.ConfigurationChecker";
 
-    private static Boolean mTakeoverActivityAvailable;
-
     public static boolean checkBasicConfiguration(Context context) {
         final PackageManager packageManager = context.getPackageManager();
         final String packageName = context.getPackageName();

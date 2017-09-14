@@ -28,8 +28,7 @@ import javax.net.ssl.SSLSocketFactory;
 
 public class HttpTest extends AndroidTestCase {
     private Future<SharedPreferences> mMockPreferences;
-    private List<Object> mFlushResults, mDecideResults;
-    private BlockingQueue<String> mPerformRequestCalls, mDecideCalls;
+    private BlockingQueue<String> mPerformRequestCalls;
     private List<String> mCleanupCalls;
     private AloomaAPI mMetrics;
     private volatile boolean mDisableFallback;
@@ -44,11 +43,8 @@ public class HttpTest extends AndroidTestCase {
         mDisableFallback = true;
         mFlushInterval = 2 * 1000;
         mMockPreferences = new TestUtils.EmptyPreferences(getContext());
-        mFlushResults = new ArrayList<Object>();
         mPerformRequestCalls = new LinkedBlockingQueue<String>();
-        mDecideCalls = new LinkedBlockingQueue<String>();
         mCleanupCalls = new ArrayList<String>();
-        mDecideResults = new ArrayList<Object>();
         mForceOverMemThreshold = false;
 
         final RemoteService mockPoster = new HttpService() {
@@ -56,45 +52,12 @@ public class HttpTest extends AndroidTestCase {
             public byte[] performRequest(String endpointUrl, Map<String, Object> params, SSLSocketFactory socketFactory)
                     throws ServiceUnavailableException, IOException {
                 try {
-                    if (null == params) {
-                        mDecideCalls.put(endpointUrl);
-
-                        if (mDecideResults.isEmpty()) {
-                            return TestUtils.bytes("{}");
-                        }
-
-                        final Object obj = mDecideResults.remove(0);
-                        if (obj instanceof IOException) {
-                            throw (IOException)obj;
-                        } else if (obj instanceof MalformedURLException) {
-                            throw (MalformedURLException)obj;
-                        } else if (obj instanceof ServiceUnavailableException) {
-                            throw (ServiceUnavailableException)obj;
-                        }
-                        return (byte[])obj;
-                    }
-                    if (mFlushResults.isEmpty()) {
-                        mFlushResults.add(TestUtils.bytes("1\n"));
-                    }
-                    assertTrue(params.containsKey("data"));
-
-                    final Object obj = mFlushResults.remove(0);
-                    if (obj instanceof IOException) {
-                        throw (IOException)obj;
-                    } else if (obj instanceof MalformedURLException) {
-                        throw (MalformedURLException)obj;
-                    } else if (obj instanceof ServiceUnavailableException) {
-                        throw (ServiceUnavailableException)obj;
-                    } else if (obj instanceof SocketTimeoutException) {
-                        throw (SocketTimeoutException)obj;
-                    }
-
                     final String jsonData = Base64Coder.decodeString(params.get("data").toString());
                     JSONArray msg = new JSONArray(jsonData);
                     JSONObject event = msg.getJSONObject(0);
                     mPerformRequestCalls.put(event.getString("event"));
 
-                    return (byte[])obj;
+                    return TestUtils.bytes("{}");
                 } catch (JSONException e) {
                     throw new RuntimeException("Malformed data passed to test mock", e);
                 } catch (InterruptedException e) {
@@ -104,16 +67,6 @@ public class HttpTest extends AndroidTestCase {
         };
 
         final ALConfig config = new ALConfig(new Bundle(), getContext()) {
-            @Override
-            public String getDecideEndpoint() {
-                return "DECIDE ENDPOINT";
-            }
-
-            @Override
-            public String getDecideFallbackEndpoint() {
-                return "DECIDE FALLBACK";
-            }
-
             @Override
             public String getEventsEndpoint() {
                 return "EVENTS ENDPOINT";
@@ -204,7 +157,6 @@ public class HttpTest extends AndroidTestCase {
 
     public void runIOException() throws InterruptedException {
         mCleanupCalls.clear();
-        mFlushResults.add(new IOException());
         mMetrics.track(SUCCEED_TEXT, null);
 
         waitForFlushInternval();
@@ -234,7 +186,6 @@ public class HttpTest extends AndroidTestCase {
 
     public void runMalformedURLException() throws InterruptedException {
         mCleanupCalls.clear();
-        mFlushResults.add(new MalformedURLException());
         mMetrics.track(SUCCEED_TEXT, null);
 
         waitForFlushInternval();
@@ -242,7 +193,6 @@ public class HttpTest extends AndroidTestCase {
         assertEquals(null, mPerformRequestCalls.poll(POLL_WAIT_MAX_MILLISECONDS, DEFAULT_TIMEUNIT));
         assertEquals(1, mCleanupCalls.size());
 
-        mFlushResults.add(new MalformedURLException());
         mMetrics.track(SUCCEED_TEXT, null);
         mMetrics.track(SUCCEED_TEXT, null);
         mMetrics.track(SUCCEED_TEXT, null);
@@ -265,7 +215,6 @@ public class HttpTest extends AndroidTestCase {
 
     private void runServiceUnavailableException(String retryAfterSeconds) throws InterruptedException {
         mCleanupCalls.clear();
-        mFlushResults.add(new RemoteService.ServiceUnavailableException("", retryAfterSeconds));
         mMetrics.track(SUCCEED_TEXT, null);
 
         waitForFlushInternval();
@@ -295,8 +244,6 @@ public class HttpTest extends AndroidTestCase {
 
     private void runDoubleServiceUnavailableException() throws InterruptedException {
         mCleanupCalls.clear();
-        mFlushResults.add(new RemoteService.ServiceUnavailableException("", ""));
-        mFlushResults.add(new RemoteService.ServiceUnavailableException("", ""));
         mMetrics.track(SUCCEED_TEXT, null);
 
         waitForFlushInternval();

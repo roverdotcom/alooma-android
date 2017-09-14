@@ -22,36 +22,12 @@ import com.alooma.android.util.ALLog;
 @SuppressLint("CommitPrefEdits")
 /* package */ class PersistentIdentity {
 
-    public static void writeReferrerPrefs(Context context, String preferencesName, Map<String, String> properties) {
-        synchronized (sReferrerPrefsLock) {
-            final SharedPreferences referralInfo = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE);
-            final SharedPreferences.Editor editor = referralInfo.edit();
-            editor.clear();
-            for (final Map.Entry<String, String> entry : properties.entrySet()) {
-                editor.putString(entry.getKey(), entry.getValue());
-            }
-            writeEdits(editor);
-            sReferrerPrefsDirty = true;
-        }
-    }
-
-    public PersistentIdentity(Future<SharedPreferences> referrerPreferences, Future<SharedPreferences> storedPreferences, Future<SharedPreferences> timeEventsPreferences, Future<SharedPreferences> aloomaPreferences) {
-        mLoadReferrerPreferences = referrerPreferences;
+    public PersistentIdentity(Future<SharedPreferences> storedPreferences, Future<SharedPreferences> timeEventsPreferences, Future<SharedPreferences> aloomaPreferences) {
         mLoadStoredPreferences = storedPreferences;
         mTimeEventsPreferences = timeEventsPreferences;
         mAloomaPreferences = aloomaPreferences;
         mSuperPropertiesCache = null;
-        mReferrerPropertiesCache = null;
         mIdentitiesLoaded = false;
-        mReferrerChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-            @Override
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-                synchronized (sReferrerPrefsLock) {
-                    readReferrerProperties();
-                    sReferrerPrefsDirty = false;
-                }
-            }
-        };
     }
 
     public synchronized void addSuperPropertiesToObject(JSONObject ob) {
@@ -92,16 +68,6 @@ import com.alooma.android.util.ALLog;
 
         mSuperPropertiesCache = replacementCache;
         storeSuperProperties();
-    }
-
-    public Map<String, String> getReferrerProperties() {
-        synchronized (sReferrerPrefsLock) {
-            if (sReferrerPrefsDirty || null == mReferrerPropertiesCache) {
-                readReferrerProperties();
-                sReferrerPrefsDirty = false;
-            }
-        }
-        return mReferrerPropertiesCache;
     }
 
     public synchronized String getEventsDistinctId() {
@@ -319,37 +285,6 @@ import com.alooma.android.util.ALLog;
         }
     }
 
-    public synchronized HashSet<Integer> getSeenCampaignIds() {
-        HashSet<Integer> campaignIds = new HashSet<>();
-        try {
-            SharedPreferences mpPrefs = mLoadStoredPreferences.get();
-            String seenIds = mpPrefs.getString("seen_campaign_ids", "");
-            StringTokenizer stTokenizer = new StringTokenizer(seenIds, DELIMITER);
-            while (stTokenizer.hasMoreTokens()) {
-                campaignIds.add(Integer.valueOf(stTokenizer.nextToken()));
-            }
-        } catch (ExecutionException e) {
-            ALLog.e(LOGTAG, "Couldn't read Alooma shared preferences.", e.getCause());
-        } catch (InterruptedException e) {
-            ALLog.e(LOGTAG, "Couldn't read Alooma shared preferences.", e);
-        }
-        return campaignIds;
-    }
-
-    public synchronized void saveCampaignAsSeen(Integer notificationId) {
-        try {
-            final SharedPreferences prefs = mLoadStoredPreferences.get();
-            final SharedPreferences.Editor editor = prefs.edit();
-            String campaignIds = prefs.getString("seen_campaign_ids", "");
-            editor.putString("seen_campaign_ids", campaignIds + notificationId + DELIMITER);
-            writeEdits(editor);
-        } catch (final ExecutionException e) {
-            ALLog.e(LOGTAG, "Can't write campaign d to shared preferences", e.getCause());
-        } catch (final InterruptedException e) {
-            ALLog.e(LOGTAG, "Can't write campaign id to shared preferences", e);
-        }
-    }
-
     //////////////////////////////////////////////////
 
     // Must be called from a synchronized setting
@@ -378,28 +313,6 @@ import com.alooma.android.util.ALLog;
             if (null == mSuperPropertiesCache) {
                 mSuperPropertiesCache = new JSONObject();
             }
-        }
-    }
-
-    // All access should be synchronized on this
-    private void readReferrerProperties() {
-        mReferrerPropertiesCache = new HashMap<String, String>();
-
-        try {
-            final SharedPreferences referrerPrefs = mLoadReferrerPreferences.get();
-            referrerPrefs.unregisterOnSharedPreferenceChangeListener(mReferrerChangeListener);
-            referrerPrefs.registerOnSharedPreferenceChangeListener(mReferrerChangeListener);
-
-            final Map<String, ?> prefsMap = referrerPrefs.getAll();
-            for (final Map.Entry<String, ?> entry : prefsMap.entrySet()) {
-                final String prefsName = entry.getKey();
-                final Object prefsVal = entry.getValue();
-                mReferrerPropertiesCache.put(prefsName, prefsVal.toString());
-            }
-        } catch (final ExecutionException e) {
-            ALLog.e(LOGTAG, "Cannot load referrer properties from shared preferences.", e.getCause());
-        } catch (final InterruptedException e) {
-            ALLog.e(LOGTAG, "Cannot load referrer properties from shared preferences.", e);
         }
     }
 
@@ -470,19 +383,13 @@ import com.alooma.android.util.ALLog;
     }
 
     private final Future<SharedPreferences> mLoadStoredPreferences;
-    private final Future<SharedPreferences> mLoadReferrerPreferences;
     private final Future<SharedPreferences> mTimeEventsPreferences;
     private final Future<SharedPreferences> mAloomaPreferences;
-    private final SharedPreferences.OnSharedPreferenceChangeListener mReferrerChangeListener;
     private JSONObject mSuperPropertiesCache;
-    private Map<String, String> mReferrerPropertiesCache;
     private boolean mIdentitiesLoaded;
     private String mEventsDistinctId;
     private static Integer sPreviousVersionCode;
     private static Boolean sIsFirstAppLaunch;
 
-    private static boolean sReferrerPrefsDirty = true;
-    private static final Object sReferrerPrefsLock = new Object();
-    private static final String DELIMITER = ",";
     private static final String LOGTAG = "AloomaAPI.PIdentity";
 }

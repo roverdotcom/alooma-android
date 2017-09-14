@@ -7,7 +7,7 @@ buildscript {
     }
 }
 
-apply plugin: 'android'
+apply plugin: 'com.android.application'
 
 repositories {
     mavenLocal()
@@ -16,7 +16,10 @@ repositories {
 
 dependencies {
     // for some reason, the signed pom specifies a package type of aar.asc, adding @aar resolves the correct file
-    compile "com.alooma.android:alooma-android:YOUR-LIB@aar"
+//    compile "com.alooma.android:alooma-android:YOUR-LIB@aar"
+//    compile "com.github.aloomaio.androidsdk:androidsdk:6.0.2"
+    compile "alooma.android:alooma-android:5.+"
+    compile 'com.google.android.gms:play-services-gcm:9.4.0+'
 }
 
 android {

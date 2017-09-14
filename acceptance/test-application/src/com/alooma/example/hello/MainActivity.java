@@ -14,8 +14,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
-
-import com.alooma.android.mpmetrics.AloomaAPI;
+import com.github.aloomaio.androidsdk.aloomametrics.AloomaAPI;
+//import com.alooma.android.mpmetrics.AloomaAPI;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,7 +30,7 @@ import java.util.Random;
  * For more information about integrating Alooma with your Android application,
  * please check out:
  *
- *     https://mixpanel.com/docs/integration-libraries/android
+ *     https://support.alooma.com/hc/en-us/articles/214019489-Android-SDK-integration
  *
  * @author alooma
  *
