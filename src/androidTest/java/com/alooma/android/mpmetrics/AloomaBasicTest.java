@@ -35,7 +35,6 @@ public class AloomaBasicTest extends AndroidTestCase {
 
     @Override
     protected void setUp() throws Exception {
-        mMockPreferences = new TestUtils.EmptyPreferences(getContext());
         AnalyticsMessages messages = AnalyticsMessages.getInstance(getContext());
         messages.hardKill();
         Thread.sleep(2000);
@@ -62,7 +61,7 @@ public class AloomaBasicTest extends AndroidTestCase {
 
     public void testGeneratedDistinctId() {
         String fakeToken = UUID.randomUUID().toString();
-        AloomaAPI alooma = new TestUtils.CleanAloomaAPI(getContext(), mMockPreferences, fakeToken);
+        AloomaAPI alooma = new TestUtils.CleanAloomaAPI(getContext(), fakeToken);
         String generatedId1 = alooma.getDistinctId();
         assertTrue(generatedId1 != null);
 
@@ -123,7 +122,7 @@ public class AloomaBasicTest extends AndroidTestCase {
                 return explodingDb;
             }
         };
-        AloomaAPI alooma = new TestUtils.CleanAloomaAPI(getContext(), mMockPreferences, "TEST TOKEN testLooperDisaster") {
+        AloomaAPI alooma = new TestUtils.CleanAloomaAPI(getContext(), "TEST TOKEN testLooperDisaster") {
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
                 return explodingMessages;
@@ -171,7 +170,7 @@ public class AloomaBasicTest extends AndroidTestCase {
             }
         };
 
-        AloomaAPI alooma = new TestUtils.CleanAloomaAPI(getContext(), mMockPreferences, "Test event operations") {
+        AloomaAPI alooma = new TestUtils.CleanAloomaAPI(getContext(), "Test event operations") {
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
                 return eventOperationsMessages;
@@ -317,11 +316,6 @@ public class AloomaBasicTest extends AndroidTestCase {
             }
 
             @Override
-            public String getDecideEndpoint() {
-                return "DECIDE_ENDPOINT";
-            }
-
-            @Override
             public boolean getDisableAppOpenEvent() { return true; }
         };
 
@@ -342,7 +336,7 @@ public class AloomaBasicTest extends AndroidTestCase {
             }
         };
 
-        AloomaAPI metrics = new TestUtils.CleanAloomaAPI(getContext(), mMockPreferences, "Test Message Queuing") {
+        AloomaAPI metrics = new TestUtils.CleanAloomaAPI(getContext(), "Test Message Queuing") {
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
                  return listener;
@@ -414,7 +408,7 @@ public class AloomaBasicTest extends AndroidTestCase {
     }
 
     public void testPersistence() {
-        AloomaAPI metricsOne = new AloomaAPI(getContext(), mMockPreferences, "SAME TOKEN");
+        AloomaAPI metricsOne = new AloomaAPI(getContext(), "SAME TOKEN");
         metricsOne.reset();
 
         JSONObject props;
@@ -442,17 +436,8 @@ public class AloomaBasicTest extends AndroidTestCase {
         };
 
         class ListeningAPI extends AloomaAPI {
-            public ListeningAPI(Context c, Future<SharedPreferences> prefs, String token) {
-                super(c, prefs, token);
-            }
-
-            @Override
-        /* package */ PersistentIdentity getPersistentIdentity(final Context context, final Future<SharedPreferences> referrerPreferences, final String token) {
-                final String aloomaPrefsName = "com.alooma.android.mpmetrics.Alooma";
-                final SharedPreferences mpSharedPrefs = context.getSharedPreferences(aloomaPrefsName, Context.MODE_PRIVATE);
-                mpSharedPrefs.edit().clear().putBoolean(token, true).putBoolean("has_launched", true).commit();
-
-                return super.getPersistentIdentity(context, referrerPreferences, token);
+            public ListeningAPI(Context c, String token) {
+                super(c, token);
             }
 
             @Override
@@ -466,7 +451,7 @@ public class AloomaBasicTest extends AndroidTestCase {
             }
         }
 
-        AloomaAPI differentToken = new ListeningAPI(getContext(), mMockPreferences, "DIFFERENT TOKEN");
+        AloomaAPI differentToken = new ListeningAPI(getContext(), "DIFFERENT TOKEN");
 
         differentToken.track("other event", null);
 
@@ -489,7 +474,7 @@ public class AloomaBasicTest extends AndroidTestCase {
 
         messages.clear();
 
-        AloomaAPI metricsTwo = new ListeningAPI(getContext(), mMockPreferences, "SAME TOKEN");
+        AloomaAPI metricsTwo = new ListeningAPI(getContext(), "SAME TOKEN");
 
         metricsTwo.track("eventname", null);
 
@@ -540,7 +525,7 @@ public class AloomaBasicTest extends AndroidTestCase {
                     }
                 };
 
-                AloomaAPI alooma = new TestUtils.CleanAloomaAPI(getContext(), mMockPreferences, "TEST TOKEN") {
+                AloomaAPI alooma = new TestUtils.CleanAloomaAPI(getContext(), "TEST TOKEN") {
                     @Override
                     protected AnalyticsMessages getAnalyticsMessages() {
                         return analyticsMessages;
@@ -608,8 +593,6 @@ public class AloomaBasicTest extends AndroidTestCase {
         assertEquals(true, testConfig.getDisableAppOpenEvent());
         assertEquals("EVENTS ENDPOINT", testConfig.getEventsEndpoint());
         assertEquals("EVENTS FALLBACK ENDPOINT", testConfig.getEventsFallbackEndpoint());
-        assertEquals("DECIDE ENDPOINT", testConfig.getDecideEndpoint());
-        assertEquals("DECIDE FALLBACK ENDPOINT", testConfig.getDecideFallbackEndpoint());
     }
 
     public void testAlias() {
@@ -640,7 +623,7 @@ public class AloomaBasicTest extends AndroidTestCase {
             }
         };
 
-        AloomaAPI metrics = new TestUtils.CleanAloomaAPI(getContext(), mMockPreferences, "Test Message Queuing") {
+        AloomaAPI metrics = new TestUtils.CleanAloomaAPI(getContext(), "Test Message Queuing") {
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
                  return listener;
@@ -651,8 +634,6 @@ public class AloomaBasicTest extends AndroidTestCase {
         metrics.identify("old id");
         metrics.alias("new id", "old id");
     }
-
-    private Future<SharedPreferences> mMockPreferences;
 
     private static final int POLL_WAIT_SECONDS = 10;
 

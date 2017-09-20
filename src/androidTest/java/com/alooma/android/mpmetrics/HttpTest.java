@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLSocketFactory;
 
 public class HttpTest extends AndroidTestCase {
-    private Future<SharedPreferences> mMockPreferences;
     private BlockingQueue<String> mPerformRequestCalls;
     private List<String> mCleanupCalls;
     private AloomaAPI mMetrics;
@@ -42,7 +41,6 @@ public class HttpTest extends AndroidTestCase {
     public void setUp() {
         mDisableFallback = true;
         mFlushInterval = 2 * 1000;
-        mMockPreferences = new TestUtils.EmptyPreferences(getContext());
         mPerformRequestCalls = new LinkedBlockingQueue<String>();
         mCleanupCalls = new ArrayList<String>();
         mForceOverMemThreshold = false;
@@ -122,7 +120,7 @@ public class HttpTest extends AndroidTestCase {
             }
         };
 
-        mMetrics = new TestUtils.CleanAloomaAPI(getContext(), mMockPreferences, "Test Message Queuing") {
+        mMetrics = new TestUtils.CleanAloomaAPI(getContext(), "Test Message Queuing") {
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
                 return listener;

@@ -34,7 +34,6 @@ public class AutomaticEventsTest extends AndroidTestCase {
     private static final String TOKEN = "Automatic Events Token";
     private static final int MAX_TIMEOUT_POLL = 6500;
     final private BlockingQueue<String> mPerformRequestEvents = new LinkedBlockingQueue<>();
-    private Future<SharedPreferences> mMockReferrerPreferences;
     private byte[] mDecideResponse;
     private int mTrackedEvents;
     private CountDownLatch mLatch = new CountDownLatch(1);
@@ -46,7 +45,6 @@ public class AutomaticEventsTest extends AndroidTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mMockReferrerPreferences = new TestUtils.EmptyPreferences(getContext());
         mTrackedEvents = 0;
         mCanRunDecide = true;
         mMinRequestsLatch = new CountDownLatch(2); // First Time Open and Update
@@ -57,7 +55,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
 
                 if (null == params) {
                     if (mDecideResponse == null) {
-                        return TestUtils.bytes("{\"notifications\":[], \"automatic_events\": true}");
+                        return TestUtils.bytes("{\"automatic_events\": true}");
                     }
                     return mDecideResponse;
                 }
@@ -128,24 +126,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
             }
         };
 
-        mCleanAloomaAPI = new AloomaAPI(getContext(), mMockReferrerPreferences, TOKEN) {
-
-            @Override
-        /* package */ PersistentIdentity getPersistentIdentity(final Context context, final Future<SharedPreferences> referrerPreferences, final String token) {
-                final String prefsName = "com.alooma.android.mpmetrics.AloomaAPI_" + token;
-                final SharedPreferences ret = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE);
-                ret.edit().clear().commit();
-
-                final String timeEventsPrefsName = "com.alooma.android.mpmetrics.AloomaAPI.TimeEvents_" + token;
-                final SharedPreferences timeSharedPrefs = context.getSharedPreferences(timeEventsPrefsName, Context.MODE_PRIVATE);
-                timeSharedPrefs.edit().clear().commit();
-
-                final String aloomaPrefsName = "com.alooma.android.mpmetrics.Alooma";
-                final SharedPreferences mpSharedPrefs = context.getSharedPreferences(aloomaPrefsName, Context.MODE_PRIVATE);
-                mpSharedPrefs.edit().clear().putInt("latest_version_code", -2).commit(); // -1 is the default value
-
-                return super.getPersistentIdentity(context, referrerPreferences, token);
-            }
+        mCleanAloomaAPI = new AloomaAPI(getContext(), TOKEN) {
 
             @Override
             AnalyticsMessages getAnalyticsMessages() {
@@ -176,7 +157,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     public void testDisableAutomaticEvents() throws InterruptedException {
         mCanRunDecide = false;
 
-        mDecideResponse = TestUtils.bytes("{\"notifications\":[], \"automatic_events\": false}");
+        mDecideResponse = TestUtils.bytes("{\"automatic_events\": false}");
 
         int calls = 3; // First Time Open, App Update, An Event Three
         mLatch = new CountDownLatch(calls);
@@ -202,7 +183,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     public void testAutomaticMultipleInstances() throws InterruptedException {
         final String SECOND_TOKEN = "Automatic Events Token Two";
         mCanRunDecide = true;
-        mDecideResponse = TestUtils.bytes("{\"notifications\":[], \"automatic_events\": true}");
+        mDecideResponse = TestUtils.bytes("{\"automatic_events\": true}");
         int initialCalls = 2;
         mLatch = new CountDownLatch(initialCalls);
         final CountDownLatch secondLatch = new CountDownLatch(initialCalls);
@@ -212,7 +193,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
             @Override
             public byte[] performRequest(String endpointUrl, Map<String, Object> params, SSLSocketFactory socketFactory) throws ServiceUnavailableException, IOException {
                 if (null == params) {
-                    return TestUtils.bytes("{\"notifications\":[], \"automatic_events\": false}");
+                    return TestUtils.bytes("{\"automatic_events\": false}");
                 }
 
                 final String jsonData = Base64Coder.decodeString(params.get("data").toString());
@@ -276,7 +257,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
             }
         };
 
-        AloomaAPI mpSecondInstance = new TestUtils.CleanAloomaAPI(getContext(), new TestUtils.EmptyPreferences(getContext()), SECOND_TOKEN) {
+        AloomaAPI mpSecondInstance = new TestUtils.CleanAloomaAPI(getContext(), SECOND_TOKEN) {
             @Override
             AnalyticsMessages getAnalyticsMessages() {
                 return mpSecondAnalyticsMessages;

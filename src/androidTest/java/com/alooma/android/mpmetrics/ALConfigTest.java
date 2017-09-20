@@ -12,6 +12,6 @@ public class ALConfigTest extends AndroidTestCase {
     }
 
     private AloomaAPI aloomaApi(final ALConfig config) {
-        return new AloomaAPI(getContext(), new TestUtils.EmptyPreferences(getContext()), TOKEN, config);
+        return new AloomaAPI(getContext(), TOKEN, config);
     }
 }

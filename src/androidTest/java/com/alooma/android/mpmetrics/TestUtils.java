@@ -21,25 +21,8 @@ public class TestUtils {
     }
 
     public static class CleanAloomaAPI extends AloomaAPI {
-        public CleanAloomaAPI(final Context context, final Future<SharedPreferences> referrerPreferences, final String token) {
-            super(context, referrerPreferences, token);
-        }
-
-        @Override
-        /* package */ PersistentIdentity getPersistentIdentity(final Context context, final Future<SharedPreferences> referrerPreferences, final String token) {
-            final String prefsName = "com.alooma.android.mpmetrics.AloomaAPI_" + token;
-            final SharedPreferences ret = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE);
-            ret.edit().clear().commit();
-
-            final String timeEventsPrefsName = "com.alooma.android.mpmetrics.AloomaAPI.TimeEvents_" + token;
-            final SharedPreferences timeSharedPrefs = context.getSharedPreferences(timeEventsPrefsName, Context.MODE_PRIVATE);
-            timeSharedPrefs.edit().clear().commit();
-
-            final String aloomaPrefsName = "com.alooma.android.mpmetrics.Alooma";
-            final SharedPreferences mpSharedPrefs = context.getSharedPreferences(aloomaPrefsName, Context.MODE_PRIVATE);
-            mpSharedPrefs.edit().clear().putBoolean(token, true).putBoolean("has_launched", true).commit();
-
-            return super.getPersistentIdentity(context, referrerPreferences, token);
+        public CleanAloomaAPI(final Context context, final String token) {
+            super(context, token);
         }
 
         @Override

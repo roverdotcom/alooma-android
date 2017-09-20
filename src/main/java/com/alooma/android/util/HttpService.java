@@ -33,12 +33,9 @@ public class HttpService implements RemoteService {
         Thread t = new Thread(new Runnable() {
             public void run() {
                 try {
-                    InetAddress apiAloomaInet = InetAddress.getByName("api.alooma.com");
-                    InetAddress decideAloomaInet = InetAddress.getByName("decide.alooma.com");
+                    InetAddress apiAloomaInet = InetAddress.getByName("inputs.alooma.com");
                     sIsAloomaBlocked = apiAloomaInet.isLoopbackAddress() ||
-                            apiAloomaInet.isAnyLocalAddress() ||
-                            decideAloomaInet.isLoopbackAddress() ||
-                            decideAloomaInet.isAnyLocalAddress();
+                            apiAloomaInet.isAnyLocalAddress();
                     if (sIsAloomaBlocked) {
                         ALLog.v(LOGTAG, "AdBlocker is enabled. Won't be able to use Alooma services.");
                     }

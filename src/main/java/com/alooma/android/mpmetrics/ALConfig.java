@@ -56,9 +56,6 @@ import javax.net.ssl.SSLSocketFactory;
  *
  *     <dt>com.alooma.android.ALConfig.EventsFallbackEndpoint</dt>
  *     <dd>A string URL. If present, AND if DisableFallback is false, events will be sent to this endpoint if the EventsEndpoint cannot be reached.</dd>
- *
- *     <dt>com.alooma.android.ALConfig.EditorUrl</dt>
- *     <dd>A string URL. If present, the library will attempt to connect to this endpoint when in interactive editing mode, rather than to the default Alooma editor url.</dd>
  * </dl>
  *
  */
@@ -172,21 +169,15 @@ public class ALConfig {
 
         String eventsEndpoint = metaData.getString("com.alooma.android.ALConfig.EventsEndpoint");
         if (null == eventsEndpoint) {
-            eventsEndpoint = "https://api.alooma.com/track?ip=1";
+            eventsEndpoint = "https://inputs.alooma.com/track?ip=1";
         }
         mEventsEndpoint = eventsEndpoint;
 
         String eventsFallbackEndpoint = metaData.getString("com.alooma.android.ALConfig.EventsFallbackEndpoint");
         if (null == eventsFallbackEndpoint) {
-            eventsFallbackEndpoint = "http://api.alooma.com/track?ip=1";
+            eventsFallbackEndpoint = "http://inputs.alooma.com/track?ip=1";
         }
         mEventsFallbackEndpoint = eventsFallbackEndpoint;
-
-        String editorUrl = metaData.getString("com.alooma.android.ALConfig.EditorUrl");
-        if (null == editorUrl) {
-            editorUrl = "wss://switchboard.alooma.com/connect/";
-        }
-        mEditorUrl = editorUrl;
 
         ALLog.v(LOGTAG,
                 "Alooma (" + VERSION + ") configured with:\n" +
@@ -200,7 +191,6 @@ public class ALConfig {
                 "    TestMode " + getTestMode() + "\n" +
                 "    EventsEndpoint " + getEventsEndpoint() + "\n" +
                 "    EventsFallbackEndpoint " + getEventsFallbackEndpoint() + "\n" +
-                "    EditorUrl " + getEditorUrl() + "\n" +
                 "    MinimumSessionDuration: " + getMinimumSessionDuration() + "\n" +
                 "    SessionTimeoutDuration: " + getSessionTimeoutDuration()
             );
@@ -243,11 +233,6 @@ public class ALConfig {
     // Fallback URL for tracking events if post to preferred URL fails
     public String getEventsFallbackEndpoint() {
         return mEventsFallbackEndpoint;
-    }
-
-    // Preferred URL for connecting to the editor websocket
-    public String getEditorUrl() {
-        return mEditorUrl;
     }
 
     public int getMinimumSessionDuration() {
@@ -296,7 +281,6 @@ public class ALConfig {
     private final boolean mDisableAppOpenEvent;
     private final String mEventsEndpoint;
     private final String mEventsFallbackEndpoint;
-    private final String mEditorUrl;
     private final int mMinSessionDuration;
     private final int mSessionTimeoutDuration;
 

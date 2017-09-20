@@ -11,17 +11,6 @@ import java.util.regex.Pattern;
 
 public class PersistentIdentityTest extends AndroidTestCase {
     public void setUp() {
-        SharedPreferences referrerPrefs = getContext().getSharedPreferences(TEST_REFERRER_PREFERENCES, Context.MODE_PRIVATE);
-        SharedPreferences.Editor referrerEditor = referrerPrefs.edit();
-        referrerEditor.clear();
-        referrerEditor.putString("referrer", "REFERRER");
-        referrerEditor.putString("utm_source", "SOURCE VALUE");
-        referrerEditor.putString("utm_medium", "MEDIUM VALUE");
-        referrerEditor.putString("utm_campaign", "CAMPAIGN NAME VALUE");
-        referrerEditor.putString("utm_content", "CONTENT VALUE");
-        referrerEditor.putString("utm_term", "TERM VALUE");
-        referrerEditor.commit();
-
         SharedPreferences testPreferences = getContext().getSharedPreferences(TEST_PREFERENCES, Context.MODE_PRIVATE);
         SharedPreferences.Editor prefsEditor = testPreferences.edit();
         prefsEditor.clear();
@@ -36,39 +25,11 @@ public class PersistentIdentityTest extends AndroidTestCase {
         timeEventsEditor.commit();
 
         SharedPreferencesLoader loader = new SharedPreferencesLoader();
-        Future<SharedPreferences> referrerLoader = loader.loadPreferences(getContext(), TEST_REFERRER_PREFERENCES, null);
         Future<SharedPreferences> testLoader = loader.loadPreferences(getContext(), TEST_PREFERENCES, null);
         Future<SharedPreferences> timeEventsLoader = loader.loadPreferences(getContext(), TEST_TIME_EVENTS_PREFERENCES, null);
         Future<SharedPreferences> aloomaLoader = loader.loadPreferences(getContext(), TEST_ALOOMA_PREFERENCES, null);
 
-        mPersistentIdentity = new PersistentIdentity(referrerLoader, testLoader, timeEventsLoader, aloomaLoader);
-    }
-
-
-
-    public void testReferrerProperties() {
-        final Map<String, String> props = mPersistentIdentity.getReferrerProperties();
-        assertEquals("REFERRER", props.get("referrer"));
-        assertEquals("SOURCE VALUE", props.get("utm_source"));
-        assertEquals("MEDIUM VALUE", props.get("utm_medium"));
-        assertEquals("CAMPAIGN NAME VALUE", props.get("utm_campaign"));
-        assertEquals("CONTENT VALUE", props.get("utm_content"));
-        assertEquals("TERM VALUE", props.get("utm_term"));
-
-        final Map<String, String> newPrefs = new HashMap<String, String>();
-        newPrefs.put("referrer", "BJORK");
-        newPrefs.put("mystery", "BOO!");
-        newPrefs.put("utm_term", "NEW TERM");
-        PersistentIdentity.writeReferrerPrefs(getContext(), TEST_REFERRER_PREFERENCES, newPrefs);
-
-        final Map<String, String> propsAfterChange = mPersistentIdentity.getReferrerProperties();
-        assertFalse(propsAfterChange.containsKey("utm_medium"));
-        assertFalse(propsAfterChange.containsKey("utm_source"));
-        assertFalse(propsAfterChange.containsKey("utm_campaign"));
-        assertFalse(propsAfterChange.containsKey("utm_content"));
-        assertEquals("BJORK", propsAfterChange.get("referrer"));
-        assertEquals("NEW TERM", propsAfterChange.get("utm_term"));
-        assertEquals("BOO!", propsAfterChange.get("mystery"));
+        mPersistentIdentity = new PersistentIdentity(testLoader, timeEventsLoader, aloomaLoader);
     }
 
     public void testUnsetEventsId() {
@@ -90,7 +51,6 @@ public class PersistentIdentityTest extends AndroidTestCase {
 
     private PersistentIdentity mPersistentIdentity;
     private static final String TEST_PREFERENCES = "TEST PERSISTENT PROPERTIES PREFS";
-    private static final String TEST_REFERRER_PREFERENCES  = "TEST REFERRER PREFS";
     private static final String TEST_TIME_EVENTS_PREFERENCES  = "TEST TIME EVENTS PREFS";
     private static final String TEST_ALOOMA_PREFERENCES  = "TEST ALOOMAPREFS";
 }

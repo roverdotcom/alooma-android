@@ -49,42 +49,16 @@ public class MainActivity extends Activity {
      */
     public static final String ALOOMA_API_TOKEN = "NOT A REAL TOKEN";
 
-    /*
-     * In order for your app to receive push notifications, you will need to enable
-     * the Google Cloud Messaging for Android service in your Google APIs console. To do this:
-     *
-     * - Navigate to https://code.google.com/apis/console
-     * - Select "Services" from the menu on the left side of the screen
-     * - Scroll down until you see the row labeled "Google Cloud Messaging for Android"
-     * - Make sure the switch next to the service name says "On"
-     *
-     * To identify this application with your Google API account, you'll also need your sender id from Google.
-     * You can get yours by logging in to the Google APIs Console at https://code.google.com/apis/console
-     * Once you have logged in, your sender id will appear as part of the URL in your browser's address bar.
-     * The URL will look something like this:
-     *
-     *     https://code.google.com/apis/console/b/0/#project:256660625236
-     *                                                       ^^^^^^^^^^^^
-     *
-     * The twelve-digit number after 'project:' is your sender id. Paste it below (where you see "YOUR SENDER ID")
-     *
-     * There are also some changes you will need to make to your AndroidManifest.xml file to
-     * declare the permissions and receiver capabilities you'll need to get your push notifications working.
-     * You can take a look at this application's AndroidManifest.xml file for an example of what is needed.
-     */
-    public static final String ANDROID_PUSH_SENDER_ID = "YOUR SENDER ID";
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         final String trackingDistinctId = getTrackingDistinctId();
 
-        // Initialize the Alooma library for tracking and push notifications.
+        // Initialize the Alooma library for tracking.
         mAlooma = AloomaAPI.getInstance(this, ALOOMA_API_TOKEN);
 
 
-        // We also identify the current user with a distinct ID, and
-        // register ourselves for push notifications from Alooma.
+        // We also identify the current user with a distinct ID.
 
         mAlooma.identify(trackingDistinctId); //this is the distinct_id value that
         // will be sent with events. If you choose not to set this,
