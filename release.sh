@@ -69,7 +69,7 @@ if [ ! $? -eq 0 ] ;then
 fi
  
 originalBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
-releaseBranch=master
+releaseBranch=adeel/new-android-sdk
 docBranch=gh-pages
 
 mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
