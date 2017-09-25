@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Future;
 
 
@@ -88,18 +89,23 @@ public class AloomaAPI {
      * Use AloomaAPI.getInstance to get an instance.
      */
     AloomaAPI(Context context, String token) {
-        this(context, token, ALConfig.getInstance(context));
+        this(context, token, null, ALConfig.getInstance(context));
+    }
+    AloomaAPI(Context context, String token, String serverUrl) {
+        this(context, token, serverUrl, ALConfig.getInstance(context));
     }
 
     /**
      * You shouldn't instantiate AloomaAPI objects directly.
      * Use AloomaAPI.getInstance to get an instance.
      */
-    AloomaAPI(Context context, String token, ALConfig config) {
+    AloomaAPI(Context context, String token, String serverUrl, ALConfig config) {
         mContext = context;
         mToken = token;
         mConfig = config;
 
+        mSessionId = UUID.randomUUID().toString();
+        mMessageIndex = 0;
         final Map<String, String> deviceInfo = new HashMap<String, String>();
         deviceInfo.put("$android_lib_version", ALConfig.VERSION);
         deviceInfo.put("$android_os", "Android");
@@ -119,7 +125,7 @@ public class AloomaAPI {
         mPersistentIdentity = getPersistentIdentity(context, token);
         mEventTimings = mPersistentIdentity.getTimeEvents();
 
-        mMessages = getAnalyticsMessages();
+        mMessages = getAnalyticsMessages(serverUrl);
 
         if (mPersistentIdentity.isFirstLaunch(MPDbAdapter.getInstance(mContext).getDatabaseFile().exists())) {
             track(AutomaticEvents.FIRST_OPEN, null, true);
@@ -188,7 +194,11 @@ public class AloomaAPI {
      *     in the settings dialog.
      * @return an instance of AloomaAPI associated with your project
      */
+
     public static AloomaAPI getInstance(Context context, String token) {
+        return getInstance(context, token, null);
+    }
+    public static AloomaAPI getInstance(Context context, String token, String serverUrl) {
         if (null == token || null == context) {
             return null;
         }
@@ -203,7 +213,7 @@ public class AloomaAPI {
 
             AloomaAPI instance = instances.get(appContext);
             if (null == instance && ConfigurationChecker.checkBasicConfiguration(appContext)) {
-                instance = new AloomaAPI(appContext, token);
+                instance = new AloomaAPI(appContext, token, serverUrl);
                 instances.put(appContext, instance);
             }
             return instance;
@@ -375,6 +385,16 @@ public class AloomaAPI {
           mPersistentIdentity.addSuperPropertiesToObject(ret);
           return ret;
       }
+
+    /**
+     * Returns the string id currently being used to uniquely identify the current session
+     * with events sent using {@link #track(String, JSONObject)}.
+     * @return The session id associated with event tracking
+     */
+
+    public String getSessionId() {
+        return mSessionId;
+    }
 
     /**
      * Returns the string id currently being used to uniquely identify the user associated
@@ -626,8 +646,8 @@ public class AloomaAPI {
     // Conveniences for testing. These methods should not be called by
     // non-test client code.
 
-    /* package */ AnalyticsMessages getAnalyticsMessages() {
-        return AnalyticsMessages.getInstance(mContext);
+    /* package */ AnalyticsMessages getAnalyticsMessages(String serverUrl) {
+        return AnalyticsMessages.getInstance(mContext, serverUrl);
     }
 
     /* package */ PersistentIdentity getPersistentIdentity(final Context context, final String token) {
@@ -655,9 +675,6 @@ public class AloomaAPI {
     }
 
     protected void track(String eventName, JSONObject properties, boolean isAutomaticEvent) {
-//        if (isAutomaticEvent && !mDecideMessages.shouldTrackAutomaticEvent()) {
-//            return;
-//        }
 
         final Long eventBegin;
         synchronized (mEventTimings) {
@@ -671,12 +688,15 @@ public class AloomaAPI {
 
             mPersistentIdentity.addSuperPropertiesToObject(messageProps);
 
-            // Don't allow super properties or referral properties to override these fields,
+            // Don't allow super properties to override these fields,
             // but DO allow the caller to override them in their given properties.
             final double timeSecondsDouble = (System.currentTimeMillis()) / 1000.0;
             final long timeSeconds = (long) timeSecondsDouble;
             messageProps.put("time", timeSeconds);
             messageProps.put("distinct_id", getDistinctId());
+            messageProps.put("session_id", getSessionId());
+            messageProps.put("message_index", mMessageIndex);
+            mMessageIndex++;
 
             if (null != eventBegin) {
                 final double eventBeginDouble = ((double) eventBegin) / 1000.0;
@@ -705,6 +725,8 @@ public class AloomaAPI {
     private final AnalyticsMessages mMessages;
     private final ALConfig mConfig;
     private final String mToken;
+    private final String mSessionId;
+    private int mMessageIndex;
     private final PersistentIdentity mPersistentIdentity;
     private final Map<String, String> mDeviceInfo;
     private final Map<String, Long> mEventTimings;

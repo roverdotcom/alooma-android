@@ -40,8 +40,18 @@ import javax.net.ssl.SSLSocketFactory;
      * Do not call directly. You should call AnalyticsMessages.getInstance()
      */
     /* package */ AnalyticsMessages(final Context context) {
+        this(context, null);
+    }
+
+    AnalyticsMessages(final Context context, String serverUrl) {
         mContext = context;
         mConfig = getConfig(context);
+        if (null == serverUrl) {
+            mServerUrl = mConfig.getEventsEndpoint();
+        }
+        else  {
+            mServerUrl = serverUrl  + "/track?ip=1";
+        }
         mWorker = createWorker();
         getPoster().checkIsAloomaBlocked();
     }
@@ -58,11 +68,15 @@ import javax.net.ssl.SSLSocketFactory;
      *     associated with these messages.
      */
     public static AnalyticsMessages getInstance(final Context messageContext) {
+        return getInstance(messageContext, null);
+    }
+
+    public static AnalyticsMessages getInstance(final Context messageContext, String serverUrl) {
         synchronized (sInstances) {
             final Context appContext = messageContext.getApplicationContext();
             AnalyticsMessages ret;
             if (! sInstances.containsKey(appContext)) {
-                ret = new AnalyticsMessages(appContext);
+                ret = new AnalyticsMessages(appContext, serverUrl);
                 sInstances.put(appContext, ret);
             } else {
                 ret = sInstances.get(appContext);
@@ -203,6 +217,7 @@ import javax.net.ssl.SSLSocketFactory;
         }
 
         class AnalyticsMessageHandler extends Handler {
+
             public AnalyticsMessageHandler(Looper looper) {
                 super(looper);
                 mDbAdapter = null;
@@ -300,10 +315,10 @@ import javax.net.ssl.SSLSocketFactory;
                 }
 
                 if (mDisableFallback) {
-                    sendData(dbAdapter, token, MPDbAdapter.Table.EVENTS, new String[]{ mConfig.getEventsEndpoint() });
+                    sendData(dbAdapter, token, MPDbAdapter.Table.EVENTS, new String[]{ mServerUrl });
                 } else {
                     sendData(dbAdapter, token, MPDbAdapter.Table.EVENTS,
-                             new String[]{ mConfig.getEventsEndpoint(), mConfig.getEventsFallbackEndpoint() });
+                             new String[]{ mServerUrl, mConfig.getEventsFallbackEndpoint() });
                 }
             }
 
@@ -318,7 +333,17 @@ import javax.net.ssl.SSLSocketFactory;
 
                 while (eventsData != null && queueCount > 0) {
                     final String lastId = eventsData[0];
-                    final String rawMessage = eventsData[1];
+                    String rawMessage = eventsData[1];
+                    try {
+                        JSONObject jobj = new JSONObject(rawMessage);
+                        JSONObject properties = jobj.getJSONObject("properties");
+                        properties.put(KEY_SENDING_TIME, System.currentTimeMillis());
+                        jobj.remove("properties");
+                        jobj.put("properties", properties);
+                        rawMessage = jobj.toString();
+                    } catch (JSONException e) {
+                        //e.printStackTrace();
+                    }
 
                     final String encodedData = Base64Coder.encodeString(rawMessage);
                     final Map<String, Object> params = new HashMap<String, Object>();
@@ -541,12 +566,13 @@ import javax.net.ssl.SSLSocketFactory;
     private final Worker mWorker;
     protected final Context mContext;
     protected final ALConfig mConfig;
-
+    private final String mServerUrl;
     // Messages for our thread
     private static final int ENQUEUE_EVENTS = 1; // push given JSON message to event DB
     private static final int FLUSH_QUEUE = 2; // push given JSON message to events DB
     private static final int KILL_WORKER = 5; // Hard-kill the worker thread, discarding all events on the event queue. This is for testing, or disasters.
 
+    public static final String KEY_SENDING_TIME = "sending_time";
     private static final String LOGTAG = "AloomaAPI.Messages";
 
     private static final Map<Context, AnalyticsMessages> sInstances = new HashMap<Context, AnalyticsMessages>();
