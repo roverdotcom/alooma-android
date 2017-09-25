@@ -4,7 +4,7 @@
 
 # Latest Version [![Build Status](https://travis-ci.org/alooma/alooma-android.svg)](https://travis-ci.org/alooma/alooma-android)
 
-##### _June 23, 2017_ - [v5.1.4](https://github.com/aloomaio/androidsdk/releases/tag/v5.1.4)
+##### _September 25, 2017_ - [v1.0.2](https://github.com/aloomaio/androidsdk/releases/tag/v1.0.2)
 
 # Table of Contents
 

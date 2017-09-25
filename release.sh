@@ -20,10 +20,10 @@ if [ ! -f ~/.gradle/gradle.properties.bak ]; then
     printf "${RED}~/.gradle/gradle.properties.bak was not found${NC}\n" 
     exit
 fi
-if [[ ! -z $(git status -s) ]]; then
-    printf "${RED}You have unstaged/untracked changes${NC}\n"
-    exit
-fi
+#if [[ ! -z $(git status -s) ]]; then
+#    printf "${RED}You have unstaged/untracked changes${NC}\n"
+#    exit
+#fi
 
 abort () {
     restoreFiles
@@ -146,8 +146,8 @@ printf '\n\n\n'
 
 read -r -p "Does this look right to you? [y/n]: " key
 if [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-    git commit -am "Update master with next snasphot version $nextSnapshotVersion"
-    git push origin master
+    git commit -am "Update $releaseBranch with next snasphot version $nextSnapshotVersion"
+    git push origin $releaseBranch
 else
     printf "${ORANGE}Make sure to update gradle.properties manually.${NC}\n"
     restoreFiles
