@@ -132,8 +132,9 @@ public class MainActivity extends Activity {
         // as we get new information.
         try {
             final JSONObject domainProperty = new JSONObject();
-            domainProperty.put("first name", domainFromEmailAddress(firstName));
-            domainProperty.put("last name", domainFromEmailAddress(lastName));
+            domainProperty.put("first name", firstName);
+            domainProperty.put("last name", lastName);
+            domainProperty.put("email ", email);
             domainProperty.put("user domain", domainFromEmailAddress(email));
             mAlooma.registerSuperProperties(domainProperty);
         } catch (final JSONException e) {
