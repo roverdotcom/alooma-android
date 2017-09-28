@@ -14,8 +14,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
-import com.github.aloomaio.androidsdk.aloomametrics.AloomaAPI;
-//import com.alooma.android.mpmetrics.AloomaAPI;
+//import com.github.aloomaio.androidsdk.aloomametrics.AloomaAPI;
+import com.alooma.android.mpmetrics.AloomaAPI;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -132,6 +132,8 @@ public class MainActivity extends Activity {
         // as we get new information.
         try {
             final JSONObject domainProperty = new JSONObject();
+            domainProperty.put("first name", domainFromEmailAddress(firstName));
+            domainProperty.put("last name", domainFromEmailAddress(lastName));
             domainProperty.put("user domain", domainFromEmailAddress(email));
             mAlooma.registerSuperProperties(domainProperty);
         } catch (final JSONException e) {
@@ -239,5 +241,5 @@ public class MainActivity extends Activity {
     private AloomaAPI mAlooma;
     private static final String ALOOMA_DISTINCT_ID_NAME = "Alooma Example $distinctid";
     private static final int PHOTO_WAS_PICKED = 2;
-    private static final String LOGTAG = "Alooma Example Application";
+    private static final String LOGTAG = "Alooma Example App";
 }
