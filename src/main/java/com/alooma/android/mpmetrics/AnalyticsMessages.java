@@ -334,16 +334,6 @@ import javax.net.ssl.SSLSocketFactory;
                 while (eventsData != null && queueCount > 0) {
                     final String lastId = eventsData[0];
                     String rawMessage = eventsData[1];
-                    try {
-                        JSONObject jobj = new JSONObject(rawMessage);
-                        JSONObject properties = jobj.getJSONObject("properties");
-                        properties.put(KEY_SENDING_TIME, System.currentTimeMillis());
-                        jobj.remove("properties");
-                        jobj.put("properties", properties);
-                        rawMessage = jobj.toString();
-                    } catch (JSONException e) {
-                        //e.printStackTrace();
-                    }
 
                     final String encodedData = Base64Coder.encodeString(rawMessage);
                     final Map<String, Object> params = new HashMap<String, Object>();
@@ -572,7 +562,6 @@ import javax.net.ssl.SSLSocketFactory;
     private static final int FLUSH_QUEUE = 2; // push given JSON message to events DB
     private static final int KILL_WORKER = 5; // Hard-kill the worker thread, discarding all events on the event queue. This is for testing, or disasters.
 
-    public static final String KEY_SENDING_TIME = "sending_time";
     private static final String LOGTAG = "AloomaAPI.Messages";
 
     private static final Map<Context, AnalyticsMessages> sInstances = new HashMap<Context, AnalyticsMessages>();

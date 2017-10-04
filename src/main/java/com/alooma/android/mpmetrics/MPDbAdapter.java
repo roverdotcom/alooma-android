@@ -1,6 +1,8 @@
 package com.alooma.android.mpmetrics;
 
 import java.io.File;
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -338,6 +340,11 @@ import com.alooma.android.util.ALLog;
                 }
                 try {
                     final JSONObject j = new JSONObject(c.getString(c.getColumnIndex(KEY_DATA)));
+                    JSONObject properties = j.getJSONObject("properties");
+
+                    String currentDateTimeString =  DateFormat.getDateTimeInstance().format(new Date());
+                    properties.put("sending_time", currentDateTimeString);
+
                     arr.put(j);
                 } catch (final JSONException e) {
                     // Ignore this object
