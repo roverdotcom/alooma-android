@@ -342,8 +342,9 @@ import com.alooma.android.util.ALLog;
                     final JSONObject j = new JSONObject(c.getString(c.getColumnIndex(KEY_DATA)));
                     JSONObject properties = j.getJSONObject("properties");
 
-                    String currentDateTimeString =  DateFormat.getDateTimeInstance().format(new Date());
-                    properties.put("sending_time", currentDateTimeString);
+                    final double timeSecondsDouble = (System.currentTimeMillis()) / 1000.0;
+                    final long timeSeconds = (long) timeSecondsDouble;
+                    properties.put("sending_time", timeSeconds);
 
                     arr.put(j);
                 } catch (final JSONException e) {

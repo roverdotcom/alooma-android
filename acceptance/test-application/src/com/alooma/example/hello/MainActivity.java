@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
      *
      *   Paste it below (where you see "YOUR API TOKEN")
      */
-    public static final String ALOOMA_API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnROYW1lIjoiYW5kcm9pZHNkay1kZXYiLCJpbnB1dExhYmVsIjoidGVzdC1pbnRlZ3JhdGlvbi0xIiwiaW5wdXRUeXBlIjoiTU9CSUxFX1NESyJ9.JCff5r7WWHFluV4il04S7Hs8iZ26_iPaZzcZJxCI57M";
+    public static final String ALOOMA_API_TOKEN = "NOT A REAL TOKEN";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

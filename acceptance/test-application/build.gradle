@@ -25,7 +25,7 @@ dependencies {
 //    compile "com.alooma.android:alooma-android:YOUR-LIB@aar"
 //    compile "com.github.aloomaio.androidsdk:androidsdk:6.0.2"
 //    compile "com.alooma.android:androidsdk:5.+"
-    compile "com.github.aloomaio:alooma-android:1.0.9-SNAPSHOT"
+    compile "com.github.aloomaio:alooma-android:1.1.0-SNAPSHOT"
     compile 'com.google.android.gms:play-services-gcm:9.4.0+'
 }
 
