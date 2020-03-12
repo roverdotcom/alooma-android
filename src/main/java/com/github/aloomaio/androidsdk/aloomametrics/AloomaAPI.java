@@ -48,6 +48,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Core class for interacting with Alooma Analytics.
+ * Own Rover's implementation.
  *
  * <p>Call {@link #getInstance(Context, String, String, boolean)} with
  * your main application activity and your Mixpanel API token as arguments
