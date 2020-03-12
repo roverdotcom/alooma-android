@@ -3,8 +3,9 @@ apply plugin: 'com.android.application'
 buildscript {
     repositories {
         mavenLocal() // or jcenter()
-        jcenter()
+        mavenCentral()
         google()
+        jcenter()
     }
 
     dependencies {
@@ -28,12 +29,12 @@ allprojects {
 }
 
 dependencies {
-    implementation 'com.github.aloomaio.androidsdk:androidsdk:6.0.3'
-    implementation 'com.android.support:multidex:1.0.1'
+    androidTestCompile project(':')
+    compile "com.google.android.gms:play-services:9.4.0"
 }
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion 24
     buildToolsVersion '26.0.2'
 
     defaultConfig {

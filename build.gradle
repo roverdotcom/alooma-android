@@ -12,7 +12,7 @@ buildscript {
     }
 }
 android {
-    compileSdkVersion 26
+    compileSdkVersion 24
     buildToolsVersion '26.0.2'
     useLibrary 'org.apache.http.legacy'
 
@@ -20,7 +20,7 @@ android {
         // If you change minSdkVersion or targetSdkVersion below, you must also change
         // the relevant attributes of the <uses-sdk> tag in AndroidManifest.xml
         minSdkVersion 9
-        targetSdkVersion 26
+        targetSdkVersion 24
         multiDexEnabled true
 
         lintOptions {
