@@ -4,14 +4,16 @@ apply plugin: 'signing'
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
+        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.3'
+        classpath 'com.android.tools.build:gradle:3.0.0'
     }
 }
 android {
     compileSdkVersion 24
-    buildToolsVersion '25.0.3'
+    buildToolsVersion '26.0.2'
     useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
@@ -31,7 +33,7 @@ android {
 // pom! If you need a transitive dependency in the library, you'll
 // have to change the bit in uploadArchives that marks all dependencies as optional.
 dependencies {
-    compile 'com.google.android.gms:play-services-gcm:9.4.0'
+    implementation 'com.google.android.gms:play-services-gcm:9.4.0'
 }
 
 android.libraryVariants.all { variant ->
@@ -150,4 +152,5 @@ uploadArchives {
 repositories {
     mavenLocal()
     mavenCentral()
+    google()
 }

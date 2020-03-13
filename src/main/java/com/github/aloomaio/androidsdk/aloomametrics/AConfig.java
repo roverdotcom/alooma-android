@@ -18,6 +18,8 @@ public class AConfig {
     // be hard-coded both in our gradle files and here in code.
     public static final String VERSION = "6.0.3";
 
+    public static final String VENDOR = "Roverdotcom";
+
     public static boolean DEBUG = true;
 
     /**

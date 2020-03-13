@@ -4,12 +4,15 @@ buildscript {
     repositories {
         mavenLocal() // or jcenter()
         mavenCentral()
+        google()
+        jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.3'
+        classpath 'com.android.tools.build:gradle:3.0.0'
     }
 }
+
 
 repositories {
     mavenLocal()
@@ -20,17 +23,19 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
+        google()
+        jcenter()
     }
 }
 
 dependencies {
-    compile 'com.github.aloomaio.androidsdk:androidsdk:6.0.3-SNAPSHOT'
-    compile 'com.android.support:multidex:1.0.1'
+    androidTestCompile project(':')
+    compile "com.google.android.gms:play-services:9.4.0"
 }
 
 android {
     compileSdkVersion 24
-    buildToolsVersion '25.0.3'
+    buildToolsVersion '26.0.2'
 
     defaultConfig {
         minSdkVersion 21
