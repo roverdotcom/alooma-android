@@ -127,6 +127,7 @@ public class AloomaAPI {
     AloomaAPI(Context context, Future<SharedPreferences> referrerPreferences, String token,
               String aloomaHost, boolean forceSSL) {
         mToken = token;
+        mRegisteredHost = aloomaHost;
         mContext = context;
         mEventTimings = new HashMap<String, Long>();
         mPeople = new PeopleImpl();
@@ -371,7 +372,7 @@ public class AloomaAPI {
         }
     }
 
-    private static boolean validateToken(String token) {
+    public static boolean validateToken(String token) {
         try {
             String tokenData = token.substring(token.indexOf('.') + 1, token.lastIndexOf('.'));
             String decoded = new String(Base64.decode(tokenData, 0));
@@ -495,6 +496,16 @@ public class AloomaAPI {
      */
     public String getDistinctId() {
         return mPersistentIdentity.getEventsDistinctId();
+     }
+
+    /**
+     * Returns the associated host with this instance.
+     * Host information is read only and specified at instance creation.
+     *
+     * @return Host the instance sends events to.
+     */
+    public String getRegisteredHost() {
+        return mRegisteredHost;
      }
 
     /**
@@ -1854,7 +1865,7 @@ public class AloomaAPI {
     }
 
     private static final String LOGTAG = "AloomaAPI.AloomaAPI";
-    private static final String APP_LINKS_LOGTAG = "AloomaAPI - App Links (OPTIONAL)";
+    private static final String APP_LINKS_LOGTAG = "AloomaAPI - App Links";
     private static final String ENGAGE_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss";
 
     private final Context mContext;
@@ -1862,6 +1873,7 @@ public class AloomaAPI {
     private final AConfig mConfig;
 
     private final String mToken;
+    private final String mRegisteredHost;
     private final PeopleImpl mPeople;
     private final UpdatesFromMixpanel mUpdatesFromMixpanel;
     private final PersistentIdentity mPersistentIdentity;
