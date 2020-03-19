@@ -116,6 +116,11 @@ public class HttpService implements RemoteService {
                     out = connection.getOutputStream();
                     bout = new BufferedOutputStream(out);
                     form.writeTo(bout);
+
+                    bout.close();
+                    bout = null;
+                    out.close();
+                    out = null;
                 } else if (contentType == ContentType.JSON && data != null){
                     connection.setRequestProperty("Content-Type", "application/json; utf-8");
                     connection.setRequestProperty("Accept", "application/json");
@@ -126,13 +131,12 @@ public class HttpService implements RemoteService {
                     out = connection.getOutputStream();
                     bout = new BufferedOutputStream(out);
                     bout.write(input);
+
+                    bout.close();
+                    bout = null;
+                    out.close();
+                    out = null;
                 }
-
-                bout.close();
-                bout = null;
-                out.close();
-                out = null;
-
                 in = connection.getInputStream();
                 response = slurp(in);
                 in.close();
