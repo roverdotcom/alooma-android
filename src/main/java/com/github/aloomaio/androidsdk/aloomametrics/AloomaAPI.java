@@ -268,7 +268,7 @@ public class AloomaAPI {
      */
     public static AloomaAPI getInstance(Context context, String token, String aloomaHost,
                                         boolean forceSSL, Map<String, String> headers, RemoteService.ContentType contentType) {
-        if (null == context | null == token || !validateToken(token)) {
+        if (null == context | null == token) {
             return null;
         }
 
@@ -403,17 +403,6 @@ public class AloomaAPI {
         synchronized (mEventTimings) {
             mEventTimings.put(eventName, writeTime);
         }
-    }
-
-    private static boolean validateToken(String token) {
-        try {
-            String tokenData = token.substring(token.indexOf('.') + 1, token.lastIndexOf('.'));
-            String decoded = new String(Base64.decode(tokenData, 0));
-            new JSONObject(decoded);
-        } catch (StringIndexOutOfBoundsException|JSONException e) {
-            return false;
-        }
-        return true;
     }
 
     /**
