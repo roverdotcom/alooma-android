@@ -13,6 +13,11 @@ import java.util.Map;
 public interface RemoteService {
     boolean isOnline(Context context);
 
-    byte[] performRequest(String endpointUrl, List<NameValuePair> params, Map<String, String> headers)
-            throws IOException;
+    byte[] performRequest(String endpointUrl, List<NameValuePair> params,Map<String,
+            String> headers, ContentType contentType, String data) throws IOException;
+
+    enum ContentType {
+        JSON,
+        URL_FORM_ENCODED
+    }
 }

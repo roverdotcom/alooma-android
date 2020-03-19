@@ -9,6 +9,7 @@ import com.github.aloomaio.androidsdk.aloomametrics.AConfig;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.message.BasicNameValuePair;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -51,7 +52,7 @@ public class HttpService implements RemoteService {
         byte[] response = null;
         for (String url : urls) {
             try {
-                response = performRequest(url, null, null);
+                response = performRequest(url, null, null, ContentType.URL_FORM_ENCODED, null);
                 break;
             } catch (final MalformedURLException e) {
                 Log.e(LOGTAG, "Cannot interpret " + url + " as a URL.", e);
@@ -71,7 +72,9 @@ public class HttpService implements RemoteService {
     public byte[] performRequest(
             String endpointUrl,
             List<NameValuePair> params,
-            Map<String, String> headers
+            Map<String, String> headers,
+            RemoteService.ContentType contentType,
+            String data
     ) throws IOException {
         if (AConfig.DEBUG) {
             Log.v(LOGTAG, "Attempting request to " + endpointUrl);
@@ -95,6 +98,8 @@ public class HttpService implements RemoteService {
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setConnectTimeout(2000);
                 connection.setReadTimeout(10000);
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
 
                 if (headers != null){
                     for (Map.Entry<String, String> header: headers.entrySet()){
@@ -102,19 +107,32 @@ public class HttpService implements RemoteService {
                     }
                 }
 
-                if (params != null) {
-                    connection.setDoOutput(true);
+                if (contentType == ContentType.URL_FORM_ENCODED && data != null){
+                    final String encodedData = Base64Coder.encodeString(data);
+                    params.add(new BasicNameValuePair("data", encodedData));
+
                     final UrlEncodedFormEntity form = new UrlEncodedFormEntity(params, "UTF-8");
-                    connection.setRequestMethod("POST");
                     connection.setFixedLengthStreamingMode((int)form.getContentLength());
                     out = connection.getOutputStream();
                     bout = new BufferedOutputStream(out);
                     form.writeTo(bout);
-                    bout.close();
-                    bout = null;
-                    out.close();
-                    out = null;
+                } else if (contentType == ContentType.JSON && data != null){
+                    connection.setRequestProperty("Content-Type", "application/json; utf-8");
+                    connection.setRequestProperty("Accept", "application/json");
+
+                    byte[] input = data.getBytes("UTF-8");
+                    connection.setFixedLengthStreamingMode(input.length);
+
+                    out = connection.getOutputStream();
+                    bout = new BufferedOutputStream(out);
+                    bout.write(input);
                 }
+
+                bout.close();
+                bout = null;
+                out.close();
+                out = null;
+
                 in = connection.getInputStream();
                 response = slurp(in);
                 in.close();

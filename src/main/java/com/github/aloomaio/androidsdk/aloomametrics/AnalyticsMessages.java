@@ -11,6 +11,7 @@ import android.util.Log;
 
 import com.github.aloomaio.androidsdk.util.Base64Coder;
 import com.github.aloomaio.androidsdk.util.HttpService;
+import com.github.aloomaio.androidsdk.util.RemoteService;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 
@@ -42,6 +43,7 @@ import java.util.Map;
     private final AConfig mConfig;
     private final String mAloomaHost;
     private final Map<String, String> mHeaders;
+    private final RemoteService.ContentType mContentType;
     private String mSchema;
 
     // Messages for our thread
@@ -65,27 +67,26 @@ import java.util.Map;
      * Do not call directly. You should call AnalyticsMessages.getInstance()
      */
     /* package */ AnalyticsMessages(final Context context) {
-        this(context, null, false, null);
+        this(context, null, false, null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
     /**
      * Do not call directly. You should call AnalyticsMessages.getInstance()
      */
-    /* package */ AnalyticsMessages(final Context context, String aloomaHost, boolean forceSSL, Map<String, String> headers) {
+    /* package */ AnalyticsMessages(final Context context, String aloomaHost, boolean forceSSL,
+                                    Map<String, String> headers, RemoteService.ContentType contentType) {
         mContext = context;
         mAloomaHost = (null == aloomaHost) ? DEFAULT_ALOOMA_HOST : aloomaHost;
         forceSSL(forceSSL);
         mConfig = getConfig(context);
         mWorker = new Worker();
         mHeaders = headers;
+        mContentType = contentType;
     }
 
     public static AnalyticsMessages getInstance(final Context messageContext) {
-        return getInstance(messageContext, null, true, null);
-    }
-
-    public static AnalyticsMessages getInstance(final Context messageContext, String aloomaHost) {
-        return getInstance(messageContext, aloomaHost, true, null);
+        return getInstance(messageContext, null, true,
+                null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
     /**
@@ -94,12 +95,13 @@ import java.util.Map;
     public static AnalyticsMessages getInstance(final Context messageContext,
                                                 String aloomaHost,
                                                 boolean forceSSL,
-                                                Map<String, String> headers) {
+                                                Map<String, String> headers,
+                                                RemoteService.ContentType contentType) {
         synchronized (sInstances) {
             final Context appContext = messageContext.getApplicationContext();
             AnalyticsMessages ret;
             if (! sInstances.containsKey(appContext)) {
-                ret = new AnalyticsMessages(appContext, aloomaHost, forceSSL, headers);
+                ret = new AnalyticsMessages(appContext, aloomaHost, forceSSL, headers, contentType);
                 sInstances.put(appContext, ret);
             }
             else {
@@ -359,10 +361,12 @@ import java.util.Map;
                 }
 
                 logAboutMessageToAlooma("Sending records to alooma");
-                sendData(dbAdapter, ADbAdapter.Table.EVENTS, mSchema + "://" + mAloomaHost + "/track?ip=1", mHeaders);
+                sendData(dbAdapter, ADbAdapter.Table.EVENTS,
+                        mSchema + "://" + mAloomaHost + "/track?ip=1", mHeaders, mContentType);
             }
 
-            private void sendData(ADbAdapter dbAdapter, ADbAdapter.Table table, String url, Map<String, String> headers) {
+            private void sendData(ADbAdapter dbAdapter, ADbAdapter.Table table, String url,
+                                  Map<String, String> headers, RemoteService.ContentType contentType) {
                 final HttpService poster = getPoster();
                 final String[] eventsData = dbAdapter.generateDataString(table);
 
@@ -370,9 +374,7 @@ import java.util.Map;
                     final String lastId = eventsData[0];
                     final String rawMessage = eventsData[1];
 
-                    final String encodedData = Base64Coder.encodeString(rawMessage);
                     final List<NameValuePair> params = new ArrayList<NameValuePair>(1);
-                    params.add(new BasicNameValuePair("data", encodedData));
                     if (AConfig.DEBUG) {
                         params.add(new BasicNameValuePair("verbose", "1"));
                     }
@@ -380,7 +382,7 @@ import java.util.Map;
                     boolean deleteEvents = true;
                     byte[] response;
                     try {
-                        response = poster.performRequest(url, params, headers);
+                        response = poster.performRequest(url, params, headers, contentType, rawMessage);
                         deleteEvents = true; // Delete events on any successful post, regardless of 1 or 0 response
                         if (null == response) {
                             logAboutMessageToAlooma("Response was null, unexpected failure posting to " + url + ".");

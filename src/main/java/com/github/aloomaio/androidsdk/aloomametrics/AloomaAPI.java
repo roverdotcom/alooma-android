@@ -20,6 +20,7 @@ import android.util.Base64;
 
 import com.github.aloomaio.androidsdk.surveys.SurveyActivity;
 import com.github.aloomaio.androidsdk.util.ActivityImageUtils;
+import com.github.aloomaio.androidsdk.util.RemoteService;
 import com.github.aloomaio.androidsdk.viewcrawler.TrackingDebug;
 import com.github.aloomaio.androidsdk.viewcrawler.UpdatesFromMixpanel;
 import com.github.aloomaio.androidsdk.viewcrawler.ViewCrawler;
@@ -50,7 +51,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Core class for interacting with Alooma Analytics.
  * Own Rover's implementation.
  *
- * <p>Call {@link #getInstance(Context, String, String, boolean, Map<String, String>)} with
+ * <p>Call {@link #getInstance(Context, String, String, Map, RemoteService.ContentType)}  with
  * your main application activity and your Mixpanel API token as arguments
  * an to get an instance you can use to report how users are using your
  * application.
@@ -140,20 +141,21 @@ public class AloomaAPI {
     private static Future<SharedPreferences> sReferrerPrefs;
 
     AloomaAPI(Context context, Future<SharedPreferences> referrerPreferences, String token) {
-        this(context, referrerPreferences, token, null, false, null);
+        this(context, referrerPreferences, token, null, false,
+                null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
     /**
      * You shouldn't instantiate AloomaAPI objects directly.
-     * Use {@link #getInstance(Context, String, String, boolean, Map<String, String>)} to get an instance.
+     * Use {@link #getInstance(Context, String, String, boolean, Map, RemoteService.ContentType)}  to get an instance.
      */
     AloomaAPI(Context context, Future<SharedPreferences> referrerPreferences, String token,
-              String aloomaHost, boolean forceSSL, Map<String, String> headers) {
+              String aloomaHost, boolean forceSSL, Map<String, String> headers, RemoteService.ContentType contentType) {
         mToken = token;
         mContext = context;
         mEventTimings = new HashMap<String, Long>();
         mPeople = new PeopleImpl();
-        mMessages = AnalyticsMessages.getInstance(mContext, aloomaHost, forceSSL, headers);
+        mMessages = AnalyticsMessages.getInstance(mContext, aloomaHost, forceSSL, headers, contentType);
         mConfig = getConfig();
 
 
@@ -219,19 +221,21 @@ public class AloomaAPI {
      * @return an instance of AloomaAPI associated with your project
      */
     public static AloomaAPI getInstance(Context context, String token) {
-        return getInstance(context, token, null, true, null);
+        return getInstance(context, token, null, true, null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
     public static AloomaAPI getInstance(Context context, String token, boolean forceSSL) {
-        return getInstance(context, token, null, forceSSL, null);
+        return getInstance(context, token, null, forceSSL, null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
-    public static AloomaAPI getInstance(Context context, String aloomaHost, String token) {
-        return getInstance(context, token, aloomaHost, true, null);
+    public static AloomaAPI getInstance(Context context, String token, String aloomaHost) {
+        return getInstance(context, token, aloomaHost, true, null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
-    public static AloomaAPI getInstance(Context context, String aloomaHost, String token, Map<String, String> headers) {
-        return getInstance(context, token, aloomaHost, true, headers);
+    public static AloomaAPI getInstance(Context context, String token,
+                                        String aloomaHost, Map<String, String> headers,
+                                        RemoteService.ContentType contentType) {
+        return getInstance(context, token, aloomaHost, true, headers, contentType);
     }
 
     /**
@@ -263,7 +267,7 @@ public class AloomaAPI {
      * @return an instance of AloomaAPI associated with your project
      */
     public static AloomaAPI getInstance(Context context, String token, String aloomaHost,
-                                        boolean forceSSL, Map<String, String> headers) {
+                                        boolean forceSSL, Map<String, String> headers, RemoteService.ContentType contentType) {
         if (null == context | null == token || !validateToken(token)) {
             return null;
         }
@@ -284,7 +288,7 @@ public class AloomaAPI {
 
             AloomaAPI instance = instances.get(appContext);
             if (null == instance && ConfigurationChecker.checkBasicConfiguration(appContext)) {
-                instance = new AloomaAPI(appContext, sReferrerPrefs, token, aloomaHost, forceSSL, headers);
+                instance = new AloomaAPI(appContext, sReferrerPrefs, token, aloomaHost, forceSSL, headers, contentType);
                 registerAppLinksListeners(context, instance);
                 instances.put(appContext, instance);
             }
@@ -1136,7 +1140,7 @@ public class AloomaAPI {
     // non-test client code.
 
     /* package */ AnalyticsMessages getAnalyticsMessages(String aloomaHost, boolean forceSSL) {
-        return AnalyticsMessages.getInstance(mContext, aloomaHost, forceSSL, null);
+        return AnalyticsMessages.getInstance(mContext, aloomaHost, forceSSL, null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
     /* package */ AConfig getConfig() {
