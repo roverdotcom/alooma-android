@@ -289,7 +289,7 @@ import java.util.Map;
                     else if (msg.what == ENQUEUE_EVENTS) {
                         final EventDescription eventDescription = (EventDescription) msg.obj;
                         try {
-                            final JSONObject message = prepareEventObject(eventDescription);
+                            final JSONObject message = prepareEventObject(eventDescription, mContentType);
                             logAboutMessageToAlooma("Queuing event for sending later");
                             logAboutMessageToAlooma("    " + message.toString());
                             queueDepth = mDbAdapter.addJSON(message, ADbAdapter.Table.EVENTS);
@@ -498,17 +498,10 @@ import java.util.Map;
                 return ret;
             }
 
-            private JSONObject prepareEventObject(EventDescription eventDescription) throws JSONException {
+            private JSONObject prepareEventObject(EventDescription eventDescription, RemoteService.ContentType contentType) throws JSONException {
                 final JSONObject eventObj = new JSONObject();
                 final JSONObject eventProperties = eventDescription.getProperties();
-                final JSONObject sendProperties = getDefaultEventProperties();
-
-                if (eventProperties != null) {
-                    for (final Iterator<?> iter = eventProperties.keys(); iter.hasNext();) {
-                        final String key = (String) iter.next();
-                        sendProperties.put(key, eventProperties.get(key));
-                    }
-                }
+                final JSONObject defaultEventProperties = getDefaultEventProperties();
 
                 JSONObject props;
                 try {
@@ -518,9 +511,23 @@ import java.util.Map;
                 }
                 props.put("token", eventDescription.getToken());
 
-                for (final Iterator<?> iter = sendProperties.keys(); iter.hasNext();) {
+                if (eventProperties != null) {
+                    for (final Iterator<?> iter = eventProperties.keys(); iter.hasNext();) {
+                        final String key = (String) iter.next();
+                        if (contentType == RemoteService.ContentType.JSON){
+                            props.put(key, eventProperties.get(key));
+                        } else {
+                            defaultEventProperties.put(key, eventProperties.get(key));
+                        }
+                    }
+                }
+                for (final Iterator<?> iter = defaultEventProperties.keys(); iter.hasNext();) {
                     final String key = (String) iter.next();
-                    eventObj.put(key, sendProperties.get(key));
+                    if (contentType == RemoteService.ContentType.JSON){
+                        props.put(key, eventProperties.get(key));
+                    } else {
+                        eventObj.put(key, defaultEventProperties.get(key));
+                    }
                 }
 
                 eventObj.put("event", eventDescription.getEventName());
