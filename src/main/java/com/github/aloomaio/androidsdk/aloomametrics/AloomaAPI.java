@@ -118,7 +118,7 @@ public class AloomaAPI {
     public static final String VERSION = AConfig.VERSION;
 
     private static final String LOGTAG = "AloomaAPI.AloomaAPI";
-    private static final String APP_LINKS_LOGTAG = "AloomaAPI - App Links (OPTIONAL)";
+    private static final String APP_LINKS_LOGTAG = "AloomaAPI - App Links";
     private static final String ENGAGE_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss";
 
     private final Context mContext;
