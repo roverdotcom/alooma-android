@@ -1,12 +1,15 @@
-package com.github.aloomaio.androidsdk.aloomametrics;
+package com.github.aloomaio.androidsdk.util;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
 
+import com.github.aloomaio.androidsdk.aloomametrics.AConfig;
+
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.message.BasicNameValuePair;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,8 +21,9 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
-/* package */ class ServerMessage {
+public class HttpService implements RemoteService {
 
     public boolean isOnline(Context context) {
         boolean isOnline;
@@ -48,7 +52,7 @@ import java.util.List;
         byte[] response = null;
         for (String url : urls) {
             try {
-                response = performRequest(url, null);
+                response = performRequest(url, null, null, ContentType.URL_FORM_ENCODED, null);
                 break;
             } catch (final MalformedURLException e) {
                 Log.e(LOGTAG, "Cannot interpret " + url + " as a URL.", e);
@@ -65,7 +69,13 @@ import java.util.List;
         return response;
     }
 
-    public byte[] performRequest(String endpointUrl, List<NameValuePair> params) throws IOException {
+    public byte[] performRequest(
+            String endpointUrl,
+            List<NameValuePair> params,
+            Map<String, String> headers,
+            RemoteService.ContentType contentType,
+            String data
+    ) throws IOException {
         if (AConfig.DEBUG) {
             Log.v(LOGTAG, "Attempting request to " + endpointUrl);
         }
@@ -88,14 +98,40 @@ import java.util.List;
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setConnectTimeout(2000);
                 connection.setReadTimeout(10000);
-                if (null != params) {
-                    connection.setDoOutput(true);
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+
+                if (headers != null){
+                    for (Map.Entry<String, String> header: headers.entrySet()){
+                        connection.setRequestProperty(header.getKey(), header.getValue());
+                    }
+                }
+
+                if (contentType == ContentType.URL_FORM_ENCODED && data != null){
+                    final String encodedData = Base64Coder.encodeString(data);
+                    params.add(new BasicNameValuePair("data", encodedData));
+
                     final UrlEncodedFormEntity form = new UrlEncodedFormEntity(params, "UTF-8");
-                    connection.setRequestMethod("POST");
                     connection.setFixedLengthStreamingMode((int)form.getContentLength());
                     out = connection.getOutputStream();
                     bout = new BufferedOutputStream(out);
                     form.writeTo(bout);
+
+                    bout.close();
+                    bout = null;
+                    out.close();
+                    out = null;
+                } else if (contentType == ContentType.JSON && data != null){
+                    connection.setRequestProperty("Content-Type", "application/json; utf-8");
+                    connection.setRequestProperty("Accept", "application/json");
+
+                    byte[] input = data.getBytes("UTF-8");
+                    connection.setFixedLengthStreamingMode(input.length);
+
+                    out = connection.getOutputStream();
+                    bout = new BufferedOutputStream(out);
+                    bout.write(input);
+
                     bout.close();
                     bout = null;
                     out.close();

@@ -23,6 +23,11 @@ import android.util.Log;
  */
 /* package */ class ADbAdapter {
     private static final String LOGTAG = "AloomaAPI.Database";
+    private static final int DATABASE_VERSION = 5;
+    public static final String KEY_DATA = "data";
+    public static final String KEY_CREATED_AT = "created_at";
+
+    private final MPDatabaseHelper mDatabaseHelper;
 
     public enum Table {
         EVENTS ("events"),
@@ -39,12 +44,6 @@ import android.util.Log;
         private final String mTableName;
     }
 
-    private static final String DATABASE_NAME = "alooma";
-    private static final int DATABASE_VERSION = 5;
-
-    public static final String KEY_DATA = "data";
-    public static final String KEY_CREATED_AT = "created_at";
-
     private static final String CREATE_EVENTS_TABLE =
        "CREATE TABLE " + Table.EVENTS.getName() + " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
         KEY_DATA + " STRING NOT NULL, " +
@@ -60,57 +59,8 @@ import android.util.Log;
         "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.PEOPLE.getName() +
         " (" + KEY_CREATED_AT + ");";
 
-    private final MPDatabaseHelper mDb;
-
-    private static class MPDatabaseHelper extends SQLiteOpenHelper {
-        MPDatabaseHelper(Context context, String dbName) {
-            super(context, dbName, null, DATABASE_VERSION);
-            mDatabaseFile = context.getDatabasePath(dbName);
-        }
-
-        /**
-         * Completely deletes the DB file from the file system.
-         */
-        public void deleteDatabase() {
-            close();
-            mDatabaseFile.delete();
-        }
-
-        @Override
-        public void onCreate(SQLiteDatabase db) {
-            if (AConfig.DEBUG) {
-                Log.v(LOGTAG, "Creating a new Mixpanel events DB");
-            }
-
-            db.execSQL(CREATE_EVENTS_TABLE);
-            db.execSQL(CREATE_PEOPLE_TABLE);
-            db.execSQL(EVENTS_TIME_INDEX);
-            db.execSQL(PEOPLE_TIME_INDEX);
-        }
-
-        @Override
-        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            if (AConfig.DEBUG) {
-                Log.v(LOGTAG, "Upgrading app, replacing Mixpanel events DB");
-            }
-
-            db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-            db.execSQL("DROP TABLE IF EXISTS " + Table.PEOPLE.getName());
-            db.execSQL(CREATE_EVENTS_TABLE);
-            db.execSQL(CREATE_PEOPLE_TABLE);
-            db.execSQL(EVENTS_TIME_INDEX);
-            db.execSQL(PEOPLE_TIME_INDEX);
-        }
-
-        private final File mDatabaseFile;
-    }
-
-    public ADbAdapter(Context context) {
-        this(context, DATABASE_NAME);
-    }
-
     public ADbAdapter(Context context, String dbName) {
-        mDb = new MPDatabaseHelper(context, dbName);
+        mDatabaseHelper = new MPDatabaseHelper(context, dbName);
     }
 
     /**
@@ -127,7 +77,7 @@ import android.util.Log;
         int count = -1;
 
         try {
-            final SQLiteDatabase db = mDb.getWritableDatabase();
+            final SQLiteDatabase db = mDatabaseHelper.getWritableDatabase();
 
             final ContentValues cv = new ContentValues();
             cv.put(KEY_DATA, j.toString());
@@ -148,12 +98,12 @@ import android.util.Log;
                 c.close();
                 c = null;
             }
-            mDb.deleteDatabase();
+            mDatabaseHelper.deleteDatabase();
         } finally {
             if (c != null) {
                 c.close();
             }
-            mDb.close();
+            mDatabaseHelper.close();
         }
         return count;
     }
@@ -167,7 +117,7 @@ import android.util.Log;
         final String tableName = table.getName();
 
         try {
-            final SQLiteDatabase db = mDb.getWritableDatabase();
+            final SQLiteDatabase db = mDatabaseHelper.getWritableDatabase();
             db.delete(tableName, "_id <= " + last_id, null);
         } catch (final SQLiteException e) {
             Log.e(LOGTAG, "Could not clean sent Mixpanel records from " + tableName + ". Re-initializing database.", e);
@@ -176,9 +126,9 @@ import android.util.Log;
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
-            mDb.deleteDatabase();
+            mDatabaseHelper.deleteDatabase();
         } finally {
-            mDb.close();
+            mDatabaseHelper.close();
         }
     }
 
@@ -191,7 +141,7 @@ import android.util.Log;
         final String tableName = table.getName();
 
         try {
-            final SQLiteDatabase db = mDb.getWritableDatabase();
+            final SQLiteDatabase db = mDatabaseHelper.getWritableDatabase();
             db.delete(tableName, KEY_CREATED_AT + " <= " + time, null);
         } catch (final SQLiteException e) {
             Log.e(LOGTAG, "Could not clean timed-out Mixpanel records from " + tableName + ". Re-initializing database.", e);
@@ -200,14 +150,14 @@ import android.util.Log;
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
-            mDb.deleteDatabase();
+            mDatabaseHelper.deleteDatabase();
         } finally {
-            mDb.close();
+            mDatabaseHelper.close();
         }
     }
 
     public void deleteDB() {
-        mDb.deleteDatabase();
+        mDatabaseHelper.deleteDatabase();
     }
 
 
@@ -226,7 +176,7 @@ import android.util.Log;
         final String tableName = table.getName();
 
         try {
-            final SQLiteDatabase db = mDb.getReadableDatabase();
+            final SQLiteDatabase db = mDatabaseHelper.getReadableDatabase();
             c = db.rawQuery("SELECT * FROM " + tableName  +
                     " ORDER BY " + KEY_CREATED_AT + " ASC LIMIT 50", null);
             final JSONArray arr = new JSONArray();
@@ -256,7 +206,7 @@ import android.util.Log;
             last_id = null;
             data = null;
         } finally {
-            mDb.close();
+            mDatabaseHelper.close();
             if (c != null) {
                 c.close();
             }
@@ -268,4 +218,46 @@ import android.util.Log;
         }
         return null;
     }
+
+    private class MPDatabaseHelper extends SQLiteOpenHelper {
+        private final File mDatabaseFile;
+
+        MPDatabaseHelper(Context context, String dbName) {
+            super(context, dbName, null, DATABASE_VERSION);
+            mDatabaseFile = context.getDatabasePath(dbName);
+        }
+
+        /**
+         * Completely deletes the DB file from the file system.
+         */
+        public void deleteDatabase() {
+            close();
+            mDatabaseFile.delete();
+        }
+
+        @Override
+        public void onCreate(SQLiteDatabase db) {
+            if (AConfig.DEBUG) {
+                Log.v(LOGTAG, "Creating a new Mixpanel events DB");
+            }
+            db.execSQL(CREATE_EVENTS_TABLE);
+            db.execSQL(CREATE_PEOPLE_TABLE);
+            db.execSQL(EVENTS_TIME_INDEX);
+            db.execSQL(PEOPLE_TIME_INDEX);
+        }
+
+        @Override
+        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+            if (AConfig.DEBUG) {
+                Log.v(LOGTAG, "Upgrading app, replacing Mixpanel events DB");
+            }
+            db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
+            db.execSQL("DROP TABLE IF EXISTS " + Table.PEOPLE.getName());
+            db.execSQL(CREATE_EVENTS_TABLE);
+            db.execSQL(CREATE_PEOPLE_TABLE);
+            db.execSQL(EVENTS_TIME_INDEX);
+            db.execSQL(PEOPLE_TIME_INDEX);
+        }
+    }
+
 }

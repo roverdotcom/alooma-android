@@ -16,10 +16,10 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Base64;
 
 import com.github.aloomaio.androidsdk.surveys.SurveyActivity;
 import com.github.aloomaio.androidsdk.util.ActivityImageUtils;
+import com.github.aloomaio.androidsdk.util.RemoteService;
 import com.github.aloomaio.androidsdk.viewcrawler.TrackingDebug;
 import com.github.aloomaio.androidsdk.viewcrawler.UpdatesFromMixpanel;
 import com.github.aloomaio.androidsdk.viewcrawler.ViewCrawler;
@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Core class for interacting with Alooma Analytics.
  * Own Rover's implementation.
  *
- * <p>Call {@link #getInstance(Context, String, String, boolean)} with
+ * <p>Call {@link #getInstance(Context, String, String, Map, RemoteService.ContentType)}  with
  * your main application activity and your Mixpanel API token as arguments
  * an to get an instance you can use to report how users are using your
  * application.
@@ -116,21 +116,45 @@ public class AloomaAPI {
      */
     public static final String VERSION = AConfig.VERSION;
 
+    // Maps each token to a singleton AloomaAPI instance
+    private static final Map<String, Map<Context, AloomaAPI>> sInstanceMap = new HashMap<String, Map<Context, AloomaAPI>>();
+    private static final SharedPreferencesLoader sPrefsLoader = new SharedPreferencesLoader();
+    private static Future<SharedPreferences> sReferrerPrefs;
+
+    private static final String LOGTAG = "AloomaAPI.AloomaAPI";
+    private static final String APP_LINKS_LOGTAG = "AloomaAPI - App Links";
+    private static final String ENGAGE_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss";
+
+    private final Context mContext;
+    private final AnalyticsMessages mMessages;
+    private final AConfig mConfig;
+
+    private final String mToken;
+    private final PeopleImpl mPeople;
+    private final UpdatesFromMixpanel mUpdatesFromMixpanel;
+    private final PersistentIdentity mPersistentIdentity;
+    private final UpdatesListener mUpdatesListener;
+    private final TrackingDebug mTrackingDebug;
+    private final DecideMessages mDecideMessages;
+    private final Map<String, String> mDeviceInfo;
+    private final Map<String, Long> mEventTimings;
+
     AloomaAPI(Context context, Future<SharedPreferences> referrerPreferences, String token) {
-        this(context, referrerPreferences, token, null, false);
+        this(context, referrerPreferences, token, null, false,
+                null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
     /**
      * You shouldn't instantiate AloomaAPI objects directly.
-     * Use {@link #getInstance(Context, String, String, boolean)} to get an instance.
+     * Use {@link #getInstance(Context, String, String, boolean, Map, RemoteService.ContentType)}  to get an instance.
      */
     AloomaAPI(Context context, Future<SharedPreferences> referrerPreferences, String token,
-              String aloomaHost, boolean forceSSL) {
+              String aloomaHost, boolean forceSSL, Map<String, String> headers, RemoteService.ContentType contentType) {
         mToken = token;
         mContext = context;
         mEventTimings = new HashMap<String, Long>();
         mPeople = new PeopleImpl();
-        mMessages = getAnalyticsMessages(aloomaHost, forceSSL);
+        mMessages = AnalyticsMessages.getInstance(mContext, aloomaHost, forceSSL, headers, contentType);
         mConfig = getConfig();
 
 
@@ -157,7 +181,7 @@ public class AloomaAPI {
         mUpdatesListener = constructUpdatesListener();
         mDecideMessages = constructDecideUpdates(token, mUpdatesListener, mUpdatesFromMixpanel);
 
-        // TODO reading persistent identify immediately forces the lazy load of the preferences, and defeats the
+        // TODO: Reading persistent identify immediately forces the lazy load of the preferences, and defeats the
         // purpose of PersistentIdentity's laziness.
         final String peopleId = mPersistentIdentity.getPeopleDistinctId();
         mDecideMessages.setDistinctId(peopleId);
@@ -196,15 +220,21 @@ public class AloomaAPI {
      * @return an instance of AloomaAPI associated with your project
      */
     public static AloomaAPI getInstance(Context context, String token) {
-        return getInstance(context, token, null, true);
+        return getInstance(context, token, null, true, null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
     public static AloomaAPI getInstance(Context context, String token, boolean forceSSL) {
-        return getInstance(context, token, null, forceSSL);
+        return getInstance(context, token, null, forceSSL, null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
-    public static AloomaAPI getInstance(Context context, String aloomaHost, String token) {
-        return getInstance(context, token, aloomaHost, true);
+    public static AloomaAPI getInstance(Context context, String token, String aloomaHost) {
+        return getInstance(context, token, aloomaHost, true, null, RemoteService.ContentType.URL_FORM_ENCODED);
+    }
+
+    public static AloomaAPI getInstance(Context context, String token,
+                                        String aloomaHost, Map<String, String> headers,
+                                        RemoteService.ContentType contentType) {
+        return getInstance(context, token, aloomaHost, true, headers, contentType);
     }
 
     /**
@@ -229,12 +259,15 @@ public class AloomaAPI {
      * </pre>
      *
      * @param context The application context you are tracking
-     * @param token   The token supplied by Alooma via the input creation UI
+     * @param token The token supplied by Alooma via the input creation UI
+     * @param aloomaHost The hostname of the URL to send events to
+     * @param forceSSL Whether to force SSL when making the HTTP Request
+     * @param headers Custom headers to supply to every HTTP Request
      * @return an instance of AloomaAPI associated with your project
      */
     public static AloomaAPI getInstance(Context context, String token, String aloomaHost,
-                                        boolean forceSSL) {
-        if (null == context | null == token || !validateToken(token)) {
+                                        boolean forceSSL, Map<String, String> headers, RemoteService.ContentType contentType) {
+        if (null == context | null == token) {
             return null;
         }
 
@@ -254,7 +287,7 @@ public class AloomaAPI {
 
             AloomaAPI instance = instances.get(appContext);
             if (null == instance && ConfigurationChecker.checkBasicConfiguration(appContext)) {
-                instance = new AloomaAPI(appContext, sReferrerPrefs, token, aloomaHost, forceSSL);
+                instance = new AloomaAPI(appContext, sReferrerPrefs, token, aloomaHost, forceSSL, headers, contentType);
                 registerAppLinksListeners(context, instance);
                 instances.put(appContext, instance);
             }
@@ -371,17 +404,6 @@ public class AloomaAPI {
         }
     }
 
-    private static boolean validateToken(String token) {
-        try {
-            String tokenData = token.substring(token.indexOf('.') + 1, token.lastIndexOf('.'));
-            String decoded = new String(Base64.decode(tokenData, 0));
-            new JSONObject(decoded);
-        } catch (StringIndexOutOfBoundsException|JSONException e) {
-            return false;
-        }
-        return true;
-    }
-
     /**
      * Track an event.
      *
@@ -442,9 +464,8 @@ public class AloomaAPI {
                 }
             }
 
-            final AnalyticsMessages.EventDescription eventDescription =
-                    new AnalyticsMessages.EventDescription(eventName, messageProps, mToken);
-            mMessages.eventsMessage(eventDescription);
+            final AnalyticsEvent event = new AnalyticsEvent(eventName, messageProps, mToken);
+            mMessages.publishMessage(event);
 
             if (null != mTrackingDebug) {
                 mTrackingDebug.reportTrack(eventName);
@@ -466,7 +487,7 @@ public class AloomaAPI {
      * your main application activity.
      */
     public void flush() {
-        mMessages.postToServer();
+        mMessages.flushQueue();
     }
 
     /**
@@ -1106,7 +1127,7 @@ public class AloomaAPI {
     // non-test client code.
 
     /* package */ AnalyticsMessages getAnalyticsMessages(String aloomaHost, boolean forceSSL) {
-        return AnalyticsMessages.getInstance(mContext, aloomaHost, forceSSL);
+        return AnalyticsMessages.getInstance(mContext, aloomaHost, forceSSL, null, RemoteService.ContentType.URL_FORM_ENCODED);
     }
 
     /* package */ AConfig getConfig() {
@@ -1768,7 +1789,7 @@ public class AloomaAPI {
 
     private void recordPeopleMessage(JSONObject message) {
         if (message.has("$distinct_id")) {
-           mMessages.peopleMessage(message);
+           mMessages.publishMessage(message);
         } else {
            mPersistentIdentity.storeWaitingPeopleRecord(message);
         }
@@ -1787,7 +1808,7 @@ public class AloomaAPI {
         for (int i = 0; i < records.length(); i++) {
             try {
                 final JSONObject message = records.getJSONObject(i);
-                mMessages.peopleMessage(message);
+                mMessages.publishMessage(message);
             } catch (final JSONException e) {
                 Log.e(LOGTAG, "Malformed people record stored pending identity, will not send it.", e);
             }
@@ -1852,27 +1873,4 @@ public class AloomaAPI {
             Log.d(APP_LINKS_LOGTAG, "Context is not an instance of Activity. To detect inbound App Links, pass an instance of an Activity to getInstance.");
         }
     }
-
-    private static final String LOGTAG = "AloomaAPI.AloomaAPI";
-    private static final String APP_LINKS_LOGTAG = "AloomaAPI - App Links (OPTIONAL)";
-    private static final String ENGAGE_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss";
-
-    private final Context mContext;
-    private final AnalyticsMessages mMessages;
-    private final AConfig mConfig;
-
-    private final String mToken;
-    private final PeopleImpl mPeople;
-    private final UpdatesFromMixpanel mUpdatesFromMixpanel;
-    private final PersistentIdentity mPersistentIdentity;
-    private final UpdatesListener mUpdatesListener;
-    private final TrackingDebug mTrackingDebug;
-    private final DecideMessages mDecideMessages;
-    private final Map<String, String> mDeviceInfo;
-    private final Map<String, Long> mEventTimings;
-
-    // Maps each token to a singleton AloomaAPI instance
-    private static final Map<String, Map<Context, AloomaAPI>> sInstanceMap = new HashMap<String, Map<Context, AloomaAPI>>();
-    private static final SharedPreferencesLoader sPrefsLoader = new SharedPreferencesLoader();
-    private static Future<SharedPreferences> sReferrerPrefs;
 }
