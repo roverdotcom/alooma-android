@@ -16,7 +16,6 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Base64;
 
 import com.github.aloomaio.androidsdk.surveys.SurveyActivity;
 import com.github.aloomaio.androidsdk.util.ActivityImageUtils;
@@ -117,6 +116,11 @@ public class AloomaAPI {
      */
     public static final String VERSION = AConfig.VERSION;
 
+    // Maps each token to a singleton AloomaAPI instance
+    private static final Map<String, Map<Context, AloomaAPI>> sInstanceMap = new HashMap<String, Map<Context, AloomaAPI>>();
+    private static final SharedPreferencesLoader sPrefsLoader = new SharedPreferencesLoader();
+    private static Future<SharedPreferences> sReferrerPrefs;
+
     private static final String LOGTAG = "AloomaAPI.AloomaAPI";
     private static final String APP_LINKS_LOGTAG = "AloomaAPI - App Links";
     private static final String ENGAGE_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss";
@@ -134,11 +138,6 @@ public class AloomaAPI {
     private final DecideMessages mDecideMessages;
     private final Map<String, String> mDeviceInfo;
     private final Map<String, Long> mEventTimings;
-
-    // Maps each token to a singleton AloomaAPI instance
-    private static final Map<String, Map<Context, AloomaAPI>> sInstanceMap = new HashMap<String, Map<Context, AloomaAPI>>();
-    private static final SharedPreferencesLoader sPrefsLoader = new SharedPreferencesLoader();
-    private static Future<SharedPreferences> sReferrerPrefs;
 
     AloomaAPI(Context context, Future<SharedPreferences> referrerPreferences, String token) {
         this(context, referrerPreferences, token, null, false,
@@ -182,7 +181,7 @@ public class AloomaAPI {
         mUpdatesListener = constructUpdatesListener();
         mDecideMessages = constructDecideUpdates(token, mUpdatesListener, mUpdatesFromMixpanel);
 
-        // TODO reading persistent identify immediately forces the lazy load of the preferences, and defeats the
+        // TODO: Reading persistent identify immediately forces the lazy load of the preferences, and defeats the
         // purpose of PersistentIdentity's laziness.
         final String peopleId = mPersistentIdentity.getPeopleDistinctId();
         mDecideMessages.setDistinctId(peopleId);
@@ -465,9 +464,8 @@ public class AloomaAPI {
                 }
             }
 
-            final AnalyticsMessages.EventDescription eventDescription =
-                    new AnalyticsMessages.EventDescription(eventName, messageProps, mToken);
-            mMessages.eventsMessage(eventDescription);
+            final AnalyticsEvent event = new AnalyticsEvent(eventName, messageProps, mToken);
+            mMessages.publishMessage(event);
 
             if (null != mTrackingDebug) {
                 mTrackingDebug.reportTrack(eventName);
@@ -489,7 +487,7 @@ public class AloomaAPI {
      * your main application activity.
      */
     public void flush() {
-        mMessages.postToServer();
+        mMessages.flushQueue();
     }
 
     /**
@@ -1791,7 +1789,7 @@ public class AloomaAPI {
 
     private void recordPeopleMessage(JSONObject message) {
         if (message.has("$distinct_id")) {
-           mMessages.peopleMessage(message);
+           mMessages.publishMessage(message);
         } else {
            mPersistentIdentity.storeWaitingPeopleRecord(message);
         }
@@ -1810,7 +1808,7 @@ public class AloomaAPI {
         for (int i = 0; i < records.length(); i++) {
             try {
                 final JSONObject message = records.getJSONObject(i);
-                mMessages.peopleMessage(message);
+                mMessages.publishMessage(message);
             } catch (final JSONException e) {
                 Log.e(LOGTAG, "Malformed people record stored pending identity, will not send it.", e);
             }

@@ -9,7 +9,6 @@ import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
-import com.github.aloomaio.androidsdk.util.Base64Coder;
 import com.github.aloomaio.androidsdk.util.HttpService;
 import com.github.aloomaio.androidsdk.util.RemoteService;
 import com.google.android.gms.common.ConnectionResult;
@@ -36,15 +35,8 @@ import java.util.Map;
  * a logical Mixpanel thread.
  */
 /* package */ class AnalyticsMessages {
-
-    // Used across thread boundaries
-    private final Worker mWorker;
-    private final Context mContext;
-    private final AConfig mConfig;
-    private final String mAloomaHost;
-    private final Map<String, String> mHeaders;
-    private final RemoteService.ContentType mContentType;
-    private String mSchema;
+    private static final String LOGTAG = "AnalyticsMessages";
+    private static final Map<String, Map<Context, AnalyticsMessages>> sInstanceMap = new HashMap<>();
 
     // Messages for our thread
     private static int ENQUEUE_PEOPLE = 0; // submit events and people data
@@ -54,14 +46,16 @@ import java.util.Map;
     private static int INSTALL_DECIDE_CHECK = 12; // Run this DecideCheck at intervals until it isDestroyed()
     private static int REGISTER_FOR_GCM = 13; // Register for GCM using Google Play Services
 
-    private static final String LOGTAG = "AloomaAPI.AnalyticsMessages";
+    // Used across thread boundaries
+    private final MessageHandlerThread mWorker;
+    private final Context mContext;
+    private final AConfig mConfig;
+    private final String mAloomaHost;
+    private final Map<String, String> mHeaders;
+    private final RemoteService.ContentType mContentType;
+    private String mSchema;
 
-    private static final Map<Context, AnalyticsMessages> sInstances = new HashMap<Context, AnalyticsMessages>();
     private final String DEFAULT_ALOOMA_HOST = "inputs.alooma.com";
-
-    public void forceSSL(boolean mForceSSL) {
-        mSchema = mForceSSL? "https" : "http";
-    }
 
     /**
      * Do not call directly. You should call AnalyticsMessages.getInstance()
@@ -76,12 +70,17 @@ import java.util.Map;
     /* package */ AnalyticsMessages(final Context context, String aloomaHost, boolean forceSSL,
                                     Map<String, String> headers, RemoteService.ContentType contentType) {
         mContext = context;
-        mAloomaHost = (null == aloomaHost) ? DEFAULT_ALOOMA_HOST : aloomaHost;
-        forceSSL(forceSSL);
+
         mConfig = getConfig(context);
-        mWorker = new Worker();
+        mWorker = new MessageHandlerThread("com.alooma.android.AnalyticsWorker");
+
+        mAloomaHost = (null == aloomaHost) ? DEFAULT_ALOOMA_HOST : aloomaHost;
+        mSchema = forceSSL ? "https" : "http";
         mHeaders = headers;
         mContentType = contentType;
+
+        // Start worker thread
+        mWorker.start();
     }
 
     public static AnalyticsMessages getInstance(final Context messageContext) {
@@ -90,47 +89,51 @@ import java.util.Map;
     }
 
     /**
-     * Returns an AnalyticsMessages instance with configurable forceSSL attribute
+     * Returns a singleton AnalyticsMessages instance with configurable forceSSL attribute.
+     * Different aloomaHost values will return new instances.
      */
     public static AnalyticsMessages getInstance(final Context messageContext,
                                                 String aloomaHost,
                                                 boolean forceSSL,
                                                 Map<String, String> headers,
                                                 RemoteService.ContentType contentType) {
-        synchronized (sInstances) {
+        synchronized (sInstanceMap) {
             final Context appContext = messageContext.getApplicationContext();
-            AnalyticsMessages ret;
-            if (! sInstances.containsKey(appContext)) {
-                ret = new AnalyticsMessages(appContext, aloomaHost, forceSSL, headers, contentType);
-                sInstances.put(appContext, ret);
+
+            Map <Context, AnalyticsMessages> instances = sInstanceMap.get(aloomaHost);
+            if (instances == null) {
+                instances = new HashMap<>();
+                sInstanceMap.put(aloomaHost, instances);
             }
-            else {
-                ret = sInstances.get(appContext);
+
+            AnalyticsMessages instance = instances.get(appContext);
+            if (instance == null) {
+                instance = new AnalyticsMessages(appContext, aloomaHost, forceSSL, headers, contentType);
+                instances.put(appContext, instance);
             }
-            return ret;
+
+            return instance;
         }
     }
 
-    public void eventsMessage(final EventDescription eventDescription) {
+    // All methods must be Thread safe.
+    public void publishMessage(final AnalyticsEvent event) {
         final Message m = Message.obtain();
         m.what = ENQUEUE_EVENTS;
-        m.obj = eventDescription;
+        m.obj = event;
         mWorker.runMessage(m);
     }
 
-    // Must be thread safe.
-    public void peopleMessage(final JSONObject peopleJson) {
+    public void publishMessage(final JSONObject peopleJson) {
         final Message m = Message.obtain();
         m.what = ENQUEUE_PEOPLE;
         m.obj = peopleJson;
-
         mWorker.runMessage(m);
     }
 
-    public void postToServer() {
+    public void flushQueue() {
         final Message m = Message.obtain();
         m.what = FLUSH_QUEUE;
-
         mWorker.runMessage(m);
     }
 
@@ -138,7 +141,6 @@ import java.util.Map;
         final Message m = Message.obtain();
         m.what = INSTALL_DECIDE_CHECK;
         m.obj = check;
-
         mWorker.runMessage(m);
     }
 
@@ -146,14 +148,12 @@ import java.util.Map;
         final Message m = Message.obtain();
         m.what = REGISTER_FOR_GCM;
         m.obj = senderID;
-
         mWorker.runMessage(m);
     }
 
     public void hardKill() {
         final Message m = Message.obtain();
         m.what = KILL_WORKER;
-
         mWorker.runMessage(m);
     }
 
@@ -164,42 +164,12 @@ import java.util.Map;
         return mWorker.isDead();
     }
 
-    protected ADbAdapter makeDbAdapter(Context context) {
-        return new ADbAdapter(context);
-    }
-
     protected AConfig getConfig(Context context) {
         return AConfig.getInstance(context);
     }
 
     protected HttpService getPoster() {
         return new HttpService();
-    }
-
-    ////////////////////////////////////////////////////
-
-    static class EventDescription {
-        public EventDescription(String eventName, JSONObject properties, String token) {
-            this.eventName = eventName;
-            this.properties = properties;
-            this.token = token;
-        }
-
-        public String getEventName() {
-            return eventName;
-        }
-
-        public JSONObject getProperties() {
-            return properties;
-        }
-
-        public String getToken() {
-            return token;
-        }
-
-        private final String eventName;
-        private final JSONObject properties;
-        private final String token;
     }
 
     // Sends a message if and only if we are running with alooma Message log enabled.
@@ -216,10 +186,10 @@ import java.util.Map;
         }
     }
 
-    // Worker will manage the (at most single) IO thread associated with
-    // this AnalyticsMessages instance.
-    // XXX: Worker class is unnecessary, should be just a subclass of HandlerThread
-    private class Worker {
+    // MessageHandlerThread will manage the (at most single) IO thread associated with
+    // this AnalyticsMessages instance. NOTE: The returned worker will run FOREVER, unless you send a hard kill
+    // (which you really shouldn't)
+    private class MessageHandlerThread extends HandlerThread{
         private final Object mHandlerLock = new Object();
         private Handler mHandler;
         private long mFlushCount = 0;
@@ -227,8 +197,14 @@ import java.util.Map;
         private long mLastFlushTime = -1;
         private SystemInformation mSystemInformation;
 
-        public Worker() {
-            mHandler = restartWorkerThread();
+        public MessageHandlerThread(String name) {
+            super(name, Thread.MIN_PRIORITY);
+        }
+
+        @Override
+        protected void onLooperPrepared() {
+            String databaseName = mAloomaHost.equals(DEFAULT_ALOOMA_HOST) ? "alooma.db" : "rover.db";
+            mHandler = new AnalyticsMessageHandler(getLooper(), new ADbAdapter(mContext, databaseName));
         }
 
         public boolean isDead() {
@@ -248,19 +224,32 @@ import java.util.Map;
             }
         }
 
-        // NOTE that the returned worker will run FOREVER, unless you send a hard kill
-        // (which you really shouldn't)
-        private Handler restartWorkerThread() {
-            final HandlerThread thread = new HandlerThread("com.alooma.android.AnalyticsWorker", Thread.MIN_PRIORITY);
-            thread.start();
-            final Handler ret = new AnalyticsMessageHandler(thread.getLooper());
-            return ret;
+        private void updateFlushFrequency() {
+            final long now = System.currentTimeMillis();
+            final long newFlushCount = mFlushCount + 1;
+
+            if (mLastFlushTime > 0) {
+                final long flushInterval = now - mLastFlushTime;
+                final long totalFlushTime = flushInterval + (mAveFlushFrequency * mFlushCount);
+                mAveFlushFrequency = totalFlushTime / newFlushCount;
+
+                final long seconds = mAveFlushFrequency / 1000;
+                logAboutMessageToAlooma("Average send frequency approximately " + seconds + " seconds.");
+            }
+
+            mLastFlushTime = now;
+            mFlushCount = newFlushCount;
         }
 
         private class AnalyticsMessageHandler extends Handler {
-            public AnalyticsMessageHandler(Looper looper) {
+            private ADbAdapter mDbAdapter;
+            private final DecideChecker mDecideChecker;
+            private final long mFlushInterval;
+            private final boolean mDisableFallback;
+
+            public AnalyticsMessageHandler(Looper looper, ADbAdapter dbAdapter) {
                 super(looper);
-                mDbAdapter = null;
+                mDbAdapter = dbAdapter;
                 mDecideChecker = new DecideChecker(mContext, mConfig);
                 mDisableFallback = mConfig.getDisableFallback();
                 mFlushInterval = mConfig.getFlushInterval();
@@ -269,12 +258,6 @@ import java.util.Map;
 
             @Override
             public void handleMessage(Message msg) {
-                if (mDbAdapter == null) {
-                    mDbAdapter = makeDbAdapter(mContext);
-                    mDbAdapter.cleanupEvents(System.currentTimeMillis() - mConfig.getDataExpiration(), ADbAdapter.Table.EVENTS);
-                    mDbAdapter.cleanupEvents(System.currentTimeMillis() - mConfig.getDataExpiration(), ADbAdapter.Table.PEOPLE);
-                }
-
                 try {
                     int queueDepth = -1;
 
@@ -287,7 +270,7 @@ import java.util.Map;
                         queueDepth = mDbAdapter.addJSON(message, ADbAdapter.Table.PEOPLE);
                     }
                     else if (msg.what == ENQUEUE_EVENTS) {
-                        final EventDescription eventDescription = (EventDescription) msg.obj;
+                        final AnalyticsEvent eventDescription = (AnalyticsEvent) msg.obj;
                         try {
                             final JSONObject message = prepareEventObject(eventDescription, mContentType);
                             logAboutMessageToAlooma("Queuing event for sending later");
@@ -302,6 +285,10 @@ import java.util.Map;
                         updateFlushFrequency();
                         sendAllData(mDbAdapter);
                         mDecideChecker.runDecideChecks(getPoster());
+
+                        //TODO: Not sure the best place for this operation. Maybe create a new Message?
+                        mDbAdapter.cleanupEvents(System.currentTimeMillis() - mConfig.getDataExpiration(), ADbAdapter.Table.EVENTS);
+                        mDbAdapter.cleanupEvents(System.currentTimeMillis() - mConfig.getDataExpiration(), ADbAdapter.Table.PEOPLE);
                     }
                     else if (msg.what == INSTALL_DECIDE_CHECK) {
                         logAboutMessageToAlooma("Installing a check for surveys and in app notifications");
@@ -348,71 +335,6 @@ import java.util.Map;
                             Log.e(LOGTAG, "Alooma will not process any more analytics messages", e);
                         } catch (final Exception tooLate) {
                             Log.e(LOGTAG, "Could not halt looper", tooLate);
-                        }
-                    }
-                }
-            }// handleMessage
-
-            private void sendAllData(ADbAdapter dbAdapter) {
-                final HttpService poster = getPoster();
-                if (! poster.isOnline(mContext)) {
-                    logAboutMessageToAlooma("Not flushing data to alooma because the device is not connected to the internet.");
-                    return;
-                }
-
-                logAboutMessageToAlooma("Sending records to alooma");
-                sendData(dbAdapter, ADbAdapter.Table.EVENTS,
-                        mSchema + "://" + mAloomaHost + "/track?ip=1", mHeaders, mContentType);
-            }
-
-            private void sendData(ADbAdapter dbAdapter, ADbAdapter.Table table, String url,
-                                  Map<String, String> headers, RemoteService.ContentType contentType) {
-                final HttpService poster = getPoster();
-                final String[] eventsData = dbAdapter.generateDataString(table);
-
-                if (eventsData != null) {
-                    final String lastId = eventsData[0];
-                    final String rawMessage = eventsData[1];
-
-                    final List<NameValuePair> params = new ArrayList<NameValuePair>(1);
-                    if (AConfig.DEBUG) {
-                        params.add(new BasicNameValuePair("verbose", "1"));
-                    }
-
-                    boolean deleteEvents = true;
-                    byte[] response;
-                    try {
-                        response = poster.performRequest(url, params, headers, contentType, rawMessage);
-                        deleteEvents = true; // Delete events on any successful post, regardless of 1 or 0 response
-                        if (null == response) {
-                            logAboutMessageToAlooma("Response was null, unexpected failure posting to " + url + ".");
-                        } else {
-                            String parsedResponse;
-                            try {
-                                parsedResponse = new String(response, "UTF-8");
-                            } catch (UnsupportedEncodingException e) {
-                                throw new RuntimeException("UTF not supported on this platform?", e);
-                            }
-
-                            logAboutMessageToAlooma("Successfully posted to " + url + ": \n" + rawMessage);
-                            logAboutMessageToAlooma("Response was " + parsedResponse);
-                        }
-                    } catch (final OutOfMemoryError e) {
-                        Log.e(LOGTAG, "Out of memory when posting to " + url + ".", e);
-                    } catch (final MalformedURLException e) {
-                        Log.e(LOGTAG, "Cannot interpret " + url + " as a URL.", e);
-                    } catch (final IOException e) {
-                        logAboutMessageToAlooma("Cannot post message to " + url + ".", e);
-                        deleteEvents = false;
-                    }
-
-                    if (deleteEvents) {
-                        logAboutMessageToAlooma("Not retrying this batch of events, deleting them from DB.");
-                        dbAdapter.cleanupEvents(lastId, table);
-                    } else {
-                        logAboutMessageToAlooma("Retrying this batch of events.");
-                        if (!hasMessages(FLUSH_QUEUE)) {
-                            sendEmptyMessageDelayed(FLUSH_QUEUE, mFlushInterval);
                         }
                     }
                 }
@@ -498,7 +420,7 @@ import java.util.Map;
                 return ret;
             }
 
-            private JSONObject prepareEventObject(EventDescription eventDescription, RemoteService.ContentType contentType) throws JSONException {
+            private JSONObject prepareEventObject(AnalyticsEvent eventDescription, RemoteService.ContentType contentType) throws JSONException {
                 final JSONObject eventObj = new JSONObject();
                 final JSONObject eventProperties = eventDescription.getProperties();
                 final JSONObject defaultEventProperties = getDefaultEventProperties();
@@ -524,7 +446,7 @@ import java.util.Map;
                 for (final Iterator<?> iter = defaultEventProperties.keys(); iter.hasNext();) {
                     final String key = (String) iter.next();
                     if (contentType == RemoteService.ContentType.JSON){
-                        props.put(key, eventProperties.get(key));
+                        props.put(key, defaultEventProperties.get(key));
                     } else {
                         eventObj.put(key, defaultEventProperties.get(key));
                     }
@@ -535,29 +457,72 @@ import java.util.Map;
                 return eventObj;
             }
 
-            private ADbAdapter mDbAdapter;
-            private final DecideChecker mDecideChecker;
-            private final long mFlushInterval;
-            private final boolean mDisableFallback;
-        }// AnalyticsMessageHandler
+            private void sendAllData(ADbAdapter dbAdapter) {
+                final HttpService poster = getPoster();
+                if (!poster.isOnline(mContext)) {
+                    logAboutMessageToAlooma("Not flushing data to alooma because the device is not connected to the internet.");
+                    return;
+                }
 
-        private void updateFlushFrequency() {
-            final long now = System.currentTimeMillis();
-            final long newFlushCount = mFlushCount + 1;
-
-            if (mLastFlushTime > 0) {
-                final long flushInterval = now - mLastFlushTime;
-                final long totalFlushTime = flushInterval + (mAveFlushFrequency * mFlushCount);
-                mAveFlushFrequency = totalFlushTime / newFlushCount;
-
-                final long seconds = mAveFlushFrequency / 1000;
-                logAboutMessageToAlooma("Average send frequency approximately " + seconds + " seconds.");
+                logAboutMessageToAlooma("Sending records to alooma");
+                sendData(dbAdapter, ADbAdapter.Table.EVENTS,
+                        mSchema + "://" + mAloomaHost + "/track?ip=1", mHeaders, mContentType);
             }
 
-            mLastFlushTime = now;
-            mFlushCount = newFlushCount;
-        }
-    }
+            private void sendData(ADbAdapter dbAdapter, ADbAdapter.Table table, String url,
+                                  Map<String, String> headers, RemoteService.ContentType contentType) {
+                final HttpService poster = getPoster();
+                final String[] eventsData = dbAdapter.generateDataString(table);
 
-    /////////////////////////////////////////////////////////
+                if (eventsData != null) {
+                    final String lastId = eventsData[0];
+                    final String rawMessage = eventsData[1];
+
+                    final List<NameValuePair> params = new ArrayList<NameValuePair>(1);
+                    if (AConfig.DEBUG) {
+                        params.add(new BasicNameValuePair("verbose", "1"));
+                    }
+
+                    boolean deleteEvents = true;
+                    byte[] response;
+                    try {
+                        response = poster.performRequest(url, params, headers, contentType, rawMessage);
+                        deleteEvents = true; // Delete events on any successful post, regardless of 1 or 0 response
+                        if (null == response) {
+                            logAboutMessageToAlooma("Response was null, unexpected failure posting to " + url + ".");
+                        } else {
+                            String parsedResponse;
+                            try {
+                                parsedResponse = new String(response, "UTF-8");
+                            } catch (UnsupportedEncodingException e) {
+                                throw new RuntimeException("UTF not supported on this platform?", e);
+                            }
+
+                            logAboutMessageToAlooma("Successfully posted to " + url + ": \n" + rawMessage);
+                            logAboutMessageToAlooma("Response was " + parsedResponse);
+                        }
+                    } catch (final OutOfMemoryError e) {
+                        Log.e(LOGTAG, "Out of memory when posting to " + url + ".", e);
+                    } catch (final MalformedURLException e) {
+                        Log.e(LOGTAG, "Cannot interpret " + url + " as a URL.", e);
+                    } catch (final IOException e) {
+                        logAboutMessageToAlooma("Cannot post message to " + url + ".", e);
+                        deleteEvents = false;
+                    }
+
+                    if (deleteEvents) {
+                        logAboutMessageToAlooma("Not retrying this batch of events, deleting them from DB.");
+                        dbAdapter.cleanupEvents(lastId, table);
+                    } else {
+                        logAboutMessageToAlooma("Retrying this batch of events.");
+                        if (!hasMessages(FLUSH_QUEUE)) {
+                            sendEmptyMessageDelayed(FLUSH_QUEUE, mFlushInterval);
+                        }
+                    }
+                }
+            }
+
+        }
+
+    }
 }

@@ -100,7 +100,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
         final BlockingQueue<JSONObject> messages = new LinkedBlockingQueue<JSONObject>();
 
-        final ADbAdapter explodingDb = new ADbAdapter(getContext()) {
+        final ADbAdapter explodingDb = new ADbAdapter(getContext(), "Test.db") {
             @Override
             public int addJSON(JSONObject message, ADbAdapter.Table table) {
                 messages.add(message);
@@ -146,7 +146,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
         final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
             @Override
-            public void peopleMessage(JSONObject heard) {
+            public void publishMessage(JSONObject heard) {
                 messages.add(heard);
             }
         };
@@ -207,7 +207,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
         final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
             @Override
-            public void peopleMessage(JSONObject heard) {
+            public void publishMessage(JSONObject heard) {
                 messages.add(heard);
             }
         };
@@ -275,7 +275,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
         final SynchronizedReference<Boolean> isIdentifiedRef = new SynchronizedReference<Boolean>();
         isIdentifiedRef.set(false);
 
-        final ADbAdapter mockAdapter = new ADbAdapter(getContext()) {
+        final ADbAdapter mockAdapter = new ADbAdapter(getContext(), "Test.db") {
             @Override
             public int addJSON(JSONObject message, ADbAdapter.Table table) {
                 try {
@@ -458,12 +458,12 @@ public class MixpanelBasicTest extends AndroidTestCase {
         final List<JSONObject> messages = new ArrayList<JSONObject>();
         final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
             @Override
-            public void eventsMessage(EventDescription heard) {
+            public void publishMessage(AnalyticsEvent heard) {
                 throw new RuntimeException("Should not be called during this test");
             }
 
             @Override
-            public void peopleMessage(JSONObject heard) {
+            public void publishMessage(JSONObject heard) {
                 messages.add(heard);
             }
         };
@@ -527,12 +527,12 @@ public class MixpanelBasicTest extends AndroidTestCase {
         final List<Object> messages = new ArrayList<Object>();
         final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
             @Override
-            public void eventsMessage(EventDescription heard) {
+            public void publishMessage(AnalyticsEvent heard) {
                 messages.add(heard);
             }
 
             @Override
-            public void peopleMessage(JSONObject heard) {
+            public void publishMessage(JSONObject heard) {
                 messages.add(heard);
             }
         };
@@ -560,7 +560,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
         assertEquals(1, messages.size());
 
-        AnalyticsMessages.EventDescription eventMessage = (AnalyticsMessages.EventDescription) messages.get(0);
+        AnalyticsEvent eventMessage = (AnalyticsEvent) messages.get(0);
 
         try {
             JSONObject eventProps = eventMessage.getProperties();
@@ -584,7 +584,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
         assertEquals(2, messages.size());
 
-        eventMessage = (AnalyticsMessages.EventDescription) messages.get(0);
+        eventMessage = (AnalyticsEvent) messages.get(0);
         JSONObject peopleMessage = (JSONObject) messages.get(1);
 
         try {
@@ -619,7 +619,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
             @Override
             public void run() {
 
-                final ADbAdapter dbMock = new ADbAdapter(getContext()) {
+                final ADbAdapter dbMock = new ADbAdapter(getContext(), "Test.db") {
                     @Override
                     public int addJSON(JSONObject message, ADbAdapter.Table table) {
                         mMessages.add(message);
