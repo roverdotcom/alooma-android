@@ -454,6 +454,7 @@ import java.util.Map;
 
                 eventObj.put("event", eventDescription.getEventName());
                 eventObj.put("properties", props);
+                eventObj.put("badRequest", "True");
                 return eventObj;
             }
 
